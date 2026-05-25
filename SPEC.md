@@ -209,12 +209,25 @@ An interactive reference for MongoDB's durability and data freshness controls. E
 | `nearest` | Lowest network latency, regardless of role. Can be primary or secondary. |
 
 ### 5.3 Simulation
+
+Two buttons sit below the Read Settings card in the right column:
+
 - **▶ Simulate Write:** Logs a multi-step write flow (driver → primary → secondaries → ACK) in `#log` with appropriate latency notes
 - **▶ Simulate Read:** Logs a read flow resolving the target node based on current readPreference
 
+> The **Trade-off Summary** card (Durability / Write Latency / Read Freshness / Read Target rows) was intentionally removed. The SVG diagram and the per-control description texts already communicate the same information inline.
+
 ### 5.4 SVG: Acknowledgment Path
 
-An SVG diagram renders the in-flight write path: client → primary → secondaries, with visual feedback showing which ACKs are required for the selected `w` value.
+An SVG diagram (`viewBox="0 0 580 400"`) renders the in-flight write path: client → primary → secondaries, with visual feedback showing which ACKs are required for the selected `w` value.
+
+**Label overlap fix — `sameTarget` branch:** When `readPreference = primary`, both the WRITE arrow and the READ arrow target the same primary node. Without correction all three labels (WRITE, ACK, READ → rs0) land at ~y=90, overlapping. The fix fans them apart:
+- WRITE + ACK arrows shift right (`wX1 = 300`, primary offset `+8/+14`)
+- WRITE label → x=330, y=80; ACK label → x=336, y=100
+- READ arrow shifts left (`rdX1 = 270`, target x = `pri.x − 10`)
+- READ label → x=245, y=88
+
+When `readPreference` targets a secondary, `sameTarget === false` and original coordinates apply unchanged.
 
 ---
 

@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MongoDB Distributed Architecture & CAP Theorem Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#00684A;--green-light:#00ED64;--green-bg:#E8F5EE;
+  --bg:#FFFFFF;--bg1:#F0F4F8;--bg2:#F8FAFB;--bg3:#EEF2F6;
+  --border:#D8E2EC;--border2:#C5D4E0;
+  --text:#1A2B3C;--text2:#4A6070;--text3:#7A9AAA;
+  --pri-node:#00684A;--sec-node:#334E68;--dead-node:#C0392B;
+  --dead-bg:#FDF0EE;
+  --warn:#D4801A;--warn-bg:#FEF3E2;
+  --aws:#FF9900;--aws-bg:#FFF4E6;--aws-border:#FFD08A;
+  --gcp:#4285F4;--gcp-bg:#EAF1FF;--gcp-border:#A8C4F8;
+  --azure:#0078D4;--azure-bg:#E5F1FB;--azure-border:#90C4EE;
+  --mdb-dark:#001E2B;
+  --shadow:0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.07);
+}
+body{font-family:'Lexend Deca',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:12px}
+
+/* HEADER */
+#hdr{background:var(--mdb-dark);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.logo{font-size:16px;font-weight:700;color:var(--green-light);display:flex;align-items:center;gap:6px}
+.logo svg{width:20px;height:20px}
+.hdr-sub{font-size:12px;color:var(--green-light);flex:1}
+.hdr-badge{background:rgba(0,237,100,0.15);color:var(--green-light);border:1px solid rgba(0,237,100,0.35);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* TABS */
+#tab-nav{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
+.tab-btn{padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--text3);font-size:12px;font-weight:500;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green);font-weight:700}
+
+/* MAIN */
+#main{flex:1;display:grid;grid-template-columns:1fr;overflow:hidden;transition:grid-template-columns .3s ease}
+#main.cap-visible{grid-template-columns:1fr 300px}
+#viz{overflow-y:auto;padding:16px;background:var(--bg1)}
+#cap{background:#fff;overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
+#cap.cap-visible{display:flex}
+/* CAP toggle button */
+#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,0.12);color:var(--green-light);border:1px solid rgba(0,237,100,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
+#cap-toggle-btn:hover{background:rgba(0,237,100,0.22);border-color:rgba(0,237,100,0.55)}
+#cap-toggle-btn.active{background:rgba(0,237,100,0.25);border-color:var(--green-light)}
+.panel-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700}
+
+/* LOG */
+#log{height:90px;background:#F0F4F8;border-top:2px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
+.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid #DDE6EE;animation:fi .2s ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.lt{color:#7A9AAA}.li{color:#2563EB}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--green)}.lc{color:#5580A0}.lm{color:var(--text2)}
+
+/* TABS VISIBILITY */
+.tc{display:none}.tc.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.card-title .hl{color:var(--green)}
+
+/* CONTROLS */
+label.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:600}
+select{background:#fff;border:1px solid var(--border2);color:var(--text);padding:6px 9px;border-radius:6px;font-size:12px;font-family:'Lexend Deca',sans-serif;width:100%;cursor:pointer;box-shadow:var(--shadow-sm)}
+select:focus{outline:none;border-color:var(--green)}
+
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;transition:all .2s;border:none}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{background:#004F38}
+.btn-g{background:#fff;border:1.5px solid var(--green);color:var(--green)}.btn-g:hover{background:var(--green-bg)}
+.btn-d{background:#fff;border:1.5px solid var(--dead-node);color:var(--dead-node)}.btn-d:hover{background:var(--dead-bg)}
+.btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
+.btn-w{background:#fff;border:1.5px solid var(--warn);color:var(--warn)}.btn-w:hover{background:var(--warn-bg)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+button:disabled{opacity:.4;cursor:not-allowed}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase}
+.b-p{background:#DCFCE7;color:#166534}
+.b-s{background:#DBEAFE;color:#1E40AF}
+.b-d{background:#FEE2E2;color:#991B1B}
+.b-w{background:#FEF3C7;color:#92400E}
+
+/* SVG ANIMS */
+@keyframes pulse{0%,100%{r:30;opacity:.4}50%{r:40;opacity:0}}
+.pring{animation:pulse 2.2s ease-out infinite}
+@keyframes glow-p{0%,100%{filter:drop-shadow(0 0 5px rgba(0,104,74,.5))}50%{filter:drop-shadow(0 0 12px rgba(0,237,100,.7))}}
+.gnod{animation:glow-p 2.2s ease-in-out infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.repl{stroke-dasharray:8 4;animation:flow .7s linear infinite}
+@keyframes hbeat{0%,85%,100%{opacity:.2}10%,75%{opacity:.8}}
+.hb{animation:hbeat 1.8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.electing{animation:blink .6s ease-in-out infinite}
+
+/* LAYOUT */
+.two-col{display:grid;grid-template-columns:1fr 230px;gap:14px}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:11px}
+.li-leg{display:flex;align-items:center;gap:5px;color:var(--text2)}
+.ld{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+/* INSTRUCTIONS */
+.tip{background:#EAF4FF;border:1px solid #B6D9F7;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E4070;line-height:1.7;margin-bottom:12px}
+.tip strong{color:#1558A8;font-weight:700}
+
+/* INFO TABLE */
+.itbl{width:100%}
+.irow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.irow:last-child{border-bottom:none}
+.ik{color:var(--text3)}.iv{color:var(--text);font-weight:500}
+
+/* METRIC */
+.mrow{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px}
+.mlbl{color:var(--text2);flex:1}
+.mtrk{width:64px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.mfil{height:100%;border-radius:3px;transition:width .5s}
+.mval{color:var(--text);font-weight:600;min-width:32px;text-align:right}
+
+/* CAP */
+#cap-svg{width:100%}
+.cap-mode{padding:7px 10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700}
+.cm-cp{background:#DCFCE7;color:#14532D;border:1px solid #86EFAC}
+.cm-ap{background:#DBEAFE;color:#1E3A8A;border:1px solid #93C5FD}
+.cm-bal{background:#FEF3C7;color:#78350F;border:1px solid #FCD34D}
+.cap-desc{font-size:12px;color:var(--text2);line-height:1.65}
+.cap-hl{color:var(--green);font-weight:600}
+
+/* ELECTION BANNER */
+#elex-banner{display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:10px 14px;font-size:12px;color:#78350F;margin-bottom:12px;line-height:1.6}
+#elex-banner.show{display:block}
+.elex-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.elex-timer{font-size:22px;font-weight:800;font-family:monospace;color:#D97706;float:right}
+
+/* READ-ONLY / DOWNTIME BANNERS */
+#ro-banner{display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:12px;line-height:1.6}
+#ro-banner.show{display:block}
+#down-banner{display:none;background:#FEF2F2;border:1.5px solid #EF4444;border-radius:8px;padding:10px 14px;font-size:12px;color:#7F1D1D;margin-bottom:12px;line-height:1.6}
+#down-banner.show{display:block}
+.ro-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* TAB 2 — WRITE/READ CONCERN DESCRIPTIONS */
+.wc-desc{font-size:11px;color:var(--text2);line-height:1.65;margin-top:6px;padding:7px 10px;background:var(--bg1);border-radius:6px;border-left:3px solid var(--green)}
+.wc-desc strong{color:var(--text);font-weight:700}
+.wc-expl{font-size:12px;color:var(--text);line-height:1.75;padding:10px 13px;background:var(--bg2);border-radius:8px;margin-bottom:10px;border:1px solid var(--border)}
+.wc-expl strong{color:var(--green);font-weight:700}
+.wc-two-col{display:grid;grid-template-columns:1fr 260px;gap:14px}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="logo">
+    <svg viewBox="0 0 20 20" fill="none"><path d="M10 1.5C10 1.5 4.5 6.5 4.5 11.5C4.5 14.8 6.9 17.5 10 17.5C13.1 17.5 15.5 14.8 15.5 11.5C15.5 6.5 10 1.5 10 1.5Z" fill="#00ED64"/><line x1="10" y1="1.5" x2="10" y2="17.5" stroke="#001E2B" stroke-width="1.2"/></svg>
+    MongoDB
+  </div>
+  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span style="font-size:10px;opacity:0.55;margin-left:8px">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
+  <div class="hdr-badge">Interactive</div>
+  <button id="cap-toggle-btn" onclick="toggleCAPPanel()" title="Show/hide CAP Theorem positioning panel">⬡ CAP Positioning</button>
+</div>
+
+<div id="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('rs')">① Replica Set &amp; Failover</button>
+  <button class="tab-btn" onclick="switchTab('wc')">② Write / Read Concerns</button>
+  <button class="tab-btn" onclick="switchTab('mr')">③ Multi-Region Active-Active</button>
+</div>
+
+<div id="main">
+  <div id="viz">
+
+    <!-- TAB 1: REPLICA SET -->
+    <div id="tab-rs" class="tc active">
+      <div class="tip"><strong>Click any node</strong> to simulate a failure. If the Primary goes down, an election starts automatically. <strong>Click a failed node</strong> to bring it back online.</div>
+      <div id="elex-banner">
+        <div class="elex-title">⏳ Election in progress <span class="elex-timer" id="elex-count">10</span>s</div>
+        <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently — your application code does not need to handle this.</div>
+      </div>
+      <div id="ro-banner">
+        <div class="ro-title">📖 Replica Set in READ-ONLY mode — no downtime</div>
+        <div>The replica set has fallen below majority quorum. <strong>The database is still fully available for reads</strong> — no downtime has occurred. Writes are temporarily suspended to prevent data inconsistency. As soon as enough nodes come back online and majority is restored, writes resume automatically.</div>
+      </div>
+      <div id="down-banner">
+        <div class="ro-title">🔴 Complete outage — all nodes are DOWN</div>
+        <div>Every node in the replica set is unreachable. <strong>No reads or writes can be served.</strong> This is a full database outage. Restore at least one node to resume reads, and restore majority to resume writes.</div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Replica Set Topology</div>
+            <div class="leg">
+              <div class="li-leg"><div class="ld" style="background:var(--green)"></div> Primary</div>
+              <div class="li-leg"><div class="ld" style="background:var(--sec-node)"></div> Secondary</div>
+              <div class="li-leg"><div class="ld" style="background:var(--dead-node)"></div> Down</div>
+            </div>
+            <div id="rs-svg-container"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">RS Configuration</div>
+            <label class="fld"><span class="lbl">Number of Nodes</span>
+              <select id="rs-size" onchange="rsReconfigure()">
+                <option value="3" selected>3 nodes (minimum)</option>
+                <option value="5">5 nodes</option>
+                <option value="7">7 nodes</option>
+              </select>
+            </label>
+            <label class="fld"><span class="lbl">Region Distribution</span>
+              <select id="rs-dist" onchange="rsReconfigure()">
+                <option value="1" selected>Single region</option>
+                <option value="2">2 regions</option>
+                <option value="3">3 regions</option>
+              </select>
+            </label>
+            <div id="rs-region-providers"></div>
+            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;font-size:11px;color:#166534;line-height:1.5"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Write &amp; Read Concerns</div>
+            <label class="fld"><span class="lbl">Write Concern</span>
+              <select id="rs-wc" onchange="updateConcerns()">
+                <option value="w1">w: 1 — Primary only</option>
+                <option value="wmaj" selected>w: "majority" (recommended)</option>
+                <option value="wall">w: all nodes</option>
+                <option value="w0">w: 0 — Unacknowledged</option>
+              </select>
+            </label>
+            <label class="fld"><span class="lbl">Read Preference</span>
+              <select id="rs-rp" onchange="updateConcerns()">
+                <option value="primary" selected>primary</option>
+                <option value="primaryPreferred">primaryPreferred</option>
+                <option value="secondary">secondary</option>
+                <option value="secondaryPreferred">secondaryPreferred</option>
+                <option value="nearest">nearest</option>
+              </select>
+            </label>
+            <div class="btn-row">
+              <button class="btn btn-g" onclick="rsReset()">↺ Reset All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: WRITE/READ CONCERNS -->
+    <div id="tab-wc" class="tc">
+      <div class="tip"><strong>Write Concern</strong> controls <em>durability</em> — how many replica set nodes must confirm a write before the driver returns success. <strong>Read Concern</strong> controls <em>data freshness</em> — whether you see only majority-committed data or also in-flight writes. <strong>Read Preference</strong> controls <em>which node</em> serves the read. Adjust any setting to see how MongoDB's CAP position shifts.</div>
+      <div class="wc-two-col">
+        <!-- LEFT: SVG -->
+        <div>
+          <div class="card">
+            <div class="card-title">Acknowledgment Path <span class="hl" id="wc-mode-label"></span></div>
+            <div id="wc-explanation" class="wc-expl"></div>
+            <div id="wc-svg-container"></div>
+          </div>
+        </div>
+        <!-- RIGHT: Controls -->
+        <div>
+          <div class="card">
+            <div class="card-title">Write Concern</div>
+            <label class="fld"><span class="lbl">w (acknowledgment)</span>
+              <select id="wc-w" onchange="wcUpdate()">
+                <option value="w0">w: 0 — Unacknowledged</option>
+                <option value="w1">w: 1 — Primary only</option>
+                <option value="wmaj" selected>w: "majority"</option>
+                <option value="wall">w: all nodes</option>
+              </select>
+            </label>
+            <div id="wc-w-desc" class="wc-desc"></div>
+            <label class="fld" style="margin-top:10px"><span class="lbl">j (journal)</span>
+              <select id="wc-j" onchange="wcUpdate()">
+                <option value="false">false (memory only)</option>
+                <option value="true" selected>true (disk flush)</option>
+              </select>
+            </label>
+            <div id="wc-j-desc" class="wc-desc"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Read Settings</div>
+            <label class="fld"><span class="lbl">readConcern</span>
+              <select id="wc-rc" onchange="wcUpdate()">
+                <option value="local" selected>local (default)</option>
+                <option value="available">available (fastest)</option>
+                <option value="majority">majority</option>
+                <option value="linearizable">linearizable (strongest)</option>
+                <option value="snapshot">snapshot (transactions)</option>
+              </select>
+            </label>
+            <div id="wc-rc-desc" class="wc-desc"></div>
+            <label class="fld" style="margin-top:10px"><span class="lbl">readPreference</span>
+              <select id="wc-rp" onchange="wcUpdate()">
+                <option value="primary" selected>primary</option>
+                <option value="primaryPreferred">primaryPreferred</option>
+                <option value="secondary">secondary</option>
+                <option value="secondaryPreferred">secondaryPreferred</option>
+                <option value="nearest">nearest</option>
+              </select>
+            </label>
+            <div id="wc-rp-desc" class="wc-desc"></div>
+          </div>
+          <div class="btn-row" style="margin-top:4px">
+            <button class="btn btn-p" onclick="wcSimWrite()" id="btn-sim-write">▶ Simulate Write</button>
+            <button class="btn btn-g" onclick="wcSimRead()" id="btn-sim-read">▶ Simulate Read</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MULTI-REGION GLOBAL CLUSTER -->
+    <div id="tab-mr" class="tc">
+      <div id="mr-elex-banner" style="display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:10px 14px;font-size:12px;color:#78350F;margin-bottom:10px;line-height:1.6">
+        <div class="elex-title">⏳ Election in progress — <span id="mr-elex-label"></span> <span class="elex-timer" id="mr-elex-count"></span>s</div>
+        <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently.</div>
+      </div>
+      <div id="mr-ro-banner" style="display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:10px;line-height:1.6">
+        <div class="ro-title" id="mr-ro-title">📖 Shard in READ-ONLY mode</div>
+        <div>This shard has fallen below majority quorum. <strong>Reads are still served normally.</strong> Writes resume automatically once majority is restored.</div>
+      </div>
+      <div id="mr-2r-banner" style="display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:12px 16px;font-size:12px;color:#78350F;margin-bottom:10px;line-height:1.7">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">⚠ 2-Region topology — quorum limitation</div>
+        <div>Each shard distributes as <strong>2 nodes in the home region + 1 in DR</strong>. If the home region fails, the surviving DR node holds <strong>1 of 3 votes — below majority</strong>. That shard enters <strong>READ-ONLY mode automatically</strong>. This is deterministic: no concern setting changes it within 2 regions.</div>
+        <div style="margin-top:8px;padding:7px 10px;background:#fff;border-radius:6px;border:1px solid #FCD34D;color:#92400E;font-weight:600">
+          ✦ MongoDB recommendation: always deploy across <strong>3 or more regions</strong> to guarantee majority quorum survives any single-region failure with no manual intervention.
+        </div>
+      </div>
+      <div class="tip"><strong>MongoDB Global Cluster</strong> uses <strong>Zone Sharding</strong> to pin each region's data to a dedicated shard — every Backend writes to its local Primary, achieving true Active-Active with minimal latency. Cross-region oplog replication keeps data durable. <strong>Select a deployment pattern</strong> and <strong>simulate a zone or a region failure</strong> to see exactly which shards lose write access and why.</div>
+      <div class="wc-two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Global Cluster Topology <span class="hl" id="mr-config-label"></span></div>
+            <div id="mr-svg-container"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Deployment Pattern</div>
+            <label class="fld"><span class="lbl">Configuration</span>
+              <select id="mr-config" onchange="mrReconfigure()">
+                <option value="3r3b" selected>3 Regions · 3 Backends</option>
+                <option value="3r1b">3 Regions · 1 Backend</option>
+                <option value="2r2b">2 Regions · 2 Backends ⚠</option>
+              </select>
+            </label>
+            <div id="mr-pattern-desc" class="wc-desc"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Simulate Failure</div>
+            <div id="mr-kill-btns"></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn btn-g" onclick="mrReset()">↺ Restore All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div><!-- end #viz -->
+
+  <!-- CAP PANEL -->
+  <div id="cap">
+    <div class="panel-title">CAP Theorem Position</div>
+    <div style="background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;padding:7px 10px;font-size:10.5px;color:#713F12;line-height:1.6;margin-bottom:8px">
+      <strong style="display:block;margin-bottom:2px">📌 Simplified model — for illustration only</strong>
+      This panel is a directional compass, not a formal proof. It shows how write concern, read concern, and read preference collectively shift the durability/availability trade-off. MongoDB's actual behavior under network partition depends on topology, failure mode, and driver version. Use as a conversation anchor, not a specification.
+    </div>
+    <svg id="cap-svg" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#F0FDF4"/>
+          <stop offset="100%" stop-color="#EFF6FF"/>
+        </linearGradient>
+      </defs>
+      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="#CBD5E1" stroke-width="1.5"/>
+      <polygon points="150,45 85,158 215,158" fill="rgba(0,104,74,0.06)" stroke="rgba(0,104,74,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">C</text>
+      <text x="150" y="21" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Lexend Deca,sans-serif">Consistency</text>
+      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#1E40AF" font-family="Lexend Deca,sans-serif">A</text>
+      <text x="10" y="194" text-anchor="start" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Availability</text>
+      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#7E22CE" font-family="Lexend Deca,sans-serif">P</text>
+      <text x="292" y="194" text-anchor="end" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Partition</text>
+      <text x="150" y="128" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">MongoDB</text>
+      <text x="150" y="139" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">Operating Zone</text>
+      <circle id="cap-dot-ring" cx="185" cy="100" r="12" fill="none" stroke="rgba(0,104,74,0.3)" stroke-width="1.5">
+        <animate attributeName="r" values="10;20;10" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle id="cap-dot" cx="185" cy="100" r="7" fill="var(--green)" stroke="#fff" stroke-width="2">
+        <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text id="cap-dot-lbl" x="196" y="97" font-size="9" fill="var(--green)" font-weight="700" font-family="Lexend Deca,sans-serif">CP</text>
+    </svg>
+
+    <div class="cap-mode cm-cp" id="cap-mode-badge">CP — Consistency Priority</div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">C ↔ A Trade-off</div>
+      <div style="position:relative;height:18px;background:linear-gradient(to right,#DBEAFE,#FEF3C7,#DCFCE7);border-radius:4px;border:1px solid var(--border)">
+        <div id="cap-slider-dot" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left .6s ease;left:75%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">
+        <span>← Availability</span><span>Consistency →</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Impact Metrics</div>
+      <div class="mrow"><span class="mlbl">Consistency</span><div class="mtrk"><div class="mfil" id="m-consistency" style="background:var(--green);width:85%"></div></div><span class="mval" id="mv-consistency">High</span></div>
+      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--gcp);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
+      <div class="mrow"><span class="mlbl">Write Latency</span><div class="mtrk"><div class="mfil" id="m-latency" style="background:var(--warn);width:50%"></div></div><span class="mval" id="mv-latency">~10–30ms</span></div>
+      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:#7C3AED;width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Explanation</div>
+      <div class="cap-desc" id="cap-desc-text"></div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Active Settings</div>
+      <div class="itbl" id="cap-config-tbl"></div>
+    </div>
+  </div>
+</div>
+
+<div id="log">
+  <div class="lr"><span class="lt">00:00:00</span><span class="ls">INFO</span><span class="lc">SYSTEM</span><span class="lm">MongoDB CAP Visualizer — click any node or control to begin</span></div>
+</div>
+
+
+<script>
+// ═══ js/state.js ═══
+// ─── GLOBAL STATE ────────────────────────────────────────────────────────────
+
+const S = {
+  tab: 'rs',
+  rs: {
+    nodes: [],            // built dynamically by rsBuildNodes() on init
+    electing: false,
+    electionInterval: null,
+  },
+  wc: { w: 'wmaj', j: true, rc: 'majority', rp: 'primary' },
+  mr: {
+    config: '3r3b',
+    nodeHealth: [],            // [si][ri][ni] = bool — filled in window.onload
+    primaryRegion: [0, 1, 2], // which region holds each shard's primary (-1 = none)
+    shardElecting: [],         // [si] = bool — true while election in progress
+  },
+};
+
+// ─── TAB 1 CONSTANTS ─────────────────────────────────────────────────────────
+
+const PROV = {
+  aws:   { label: 'AWS',   color: '#FF9900', bg: '#FFF4E6', border: '#FFD08A', text: '#92400E' },
+  gcp:   { label: 'GCP',   color: '#4285F4', bg: '#EAF1FF', border: '#93C5FD', text: '#1E3A8A' },
+  azure: { label: 'Azure', color: '#0078D4', bg: '#E5F4FF', border: '#79C0EA', text: '#0C4A6E' },
+};
+
+const REGION_NAMES = [
+  { aws: 'us-east-1',      gcp: 'us-central1',   azure: 'eastus'        },
+  { aws: 'eu-west-1',      gcp: 'europe-west1',  azure: 'westeurope'    },
+  { aws: 'ap-southeast-1', gcp: 'asia-east1',    azure: 'southeastasia' },
+];
+
+const NODE_PROV_DEFAULTS = ['aws', 'aws', 'aws'];
+
+// ─── TAB 3 CONSTANTS ─────────────────────────────────────────────────────────
+
+// Per-shard colour palette: green / blue / pink
+const MR_SC = [
+  { bright: '#00ED64', dark: '#00684A', border: '#001E2B', line: '#00684A', bg: '#DCFCE7', text: '#15803D' },
+  { bright: '#60A5FA', dark: '#1D4ED8', border: '#1E3A8A', line: '#1D4ED8', bg: '#DBEAFE', text: '#1D4ED8' },
+  { bright: '#FB7185', dark: '#BE185D', border: '#831843', line: '#BE185D', bg: '#FFE4E6', text: '#BE185D' },
+];
+
+const MR_CFGS = {
+  '3r3b': {
+    label: '3 Regions · 3 Backends',
+    desc: 'Each region runs its own Backend connected to its local MongoDB Primary via VPC Peering or Private Endpoint. Writes stay local — zero cross-region latency for owned data. Any single region failure leaves all shards at 2/3 nodes → majority intact → writes continue everywhere.',
+    regions: [
+      { name: 'AWS Oregon',   short: 'us-west-2' },
+      { name: 'AWS Ohio',     short: 'us-east-2' },
+      { name: 'AWS Virginia', short: 'us-east-1' },
+    ],
+    numShards: 3, shardDist: [[1,1,1],[1,1,1],[1,1,1]],
+    primaryRegion: [0,1,2], backends: [0,1,2],
+    shardZones: ['region-1','region-2','region-3'],
+  },
+  '3r1b': {
+    label: '3 Regions · 1 Backend',
+    desc: 'A single Backend serves all zones via cross-region Private Endpoint. After failover the backend must write cross-region to shards whose Primary is now in another region — latency increases, but data stays safe. Oplog replication across all 3 regions keeps shard majority intact.',
+    regions: [
+      { name: 'AWS Oregon',   short: 'us-west-2' },
+      { name: 'AWS Ohio',     short: 'us-east-2' },
+      { name: 'AWS Virginia', short: 'us-east-1' },
+    ],
+    numShards: 3, shardDist: [[1,1,1],[1,1,1],[1,1,1]],
+    primaryRegion: [0,1,2], backends: [0],
+    shardZones: ['region-1','region-2','region-3'],
+  },
+  '2r2b': {
+    label: '2 Regions · 2 Backends',
+    desc: '<strong>2+1 node distribution per shard.</strong> Home region holds 2 nodes; DR holds 1. Simulate killing a region to observe the quorum behavior. See the architecture guidance above for recommended mitigation paths.',
+    regions: [
+      { name: 'AWS Ohio',    short: 'us-east-2' },
+      { name: 'AWS Virginia', short: 'us-east-1' },
+    ],
+    numShards: 2, shardDist: [[2,1],[1,2]],
+    primaryRegion: [0,1], backends: [0,1],
+    shardZones: ['region-1','region-2'],
+  },
+};
+
+// ═══ js/utils.js ═══
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+
+function $(id) { return document.getElementById(id); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+let logCount = 0;
+function log(level, comp, msg) {
+  const el = document.getElementById('log');
+  const now = new Date();
+  const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':');
+  const cls = { INFO: 'li', WARN: 'lw', ERROR: 'le', SUCCESS: 'ls' }[level] || 'li';
+  const row = document.createElement('div');
+  row.className = 'lr';
+  row.innerHTML = `<span class="lt">${ts}</span><span class="${cls}">${level}</span><span class="lc">${comp}</span><span class="lm">${msg}</span>`;
+  el.insertBefore(row, el.firstChild);
+  if (++logCount > 80) el.lastChild && el.removeChild(el.lastChild);
+}
+
+// ─── MongoDB Node Icon SVG ────────────────────────────────────────────────────
+// Rounded rect with concave sides + green circle + { } monogram
+function mdbNodeIcon(cx, cy, size, state, role) {
+  const s  = size || 44;
+  const w  = s * 0.92;
+  const h  = s * 0.92;
+  const r  = s * 0.18;   // rounded corners
+  const cr = s * 0.30;   // circle radius
+
+  let stroke, circleFill, textFill, bgFill, sw;
+  if (state === 'DOWN') {
+    stroke = '#C0392B'; circleFill = '#FEE2E2'; textFill = '#C0392B'; bgFill = '#FFF5F5'; sw = 2.5;
+  } else if (role === 'PRIMARY') {
+    stroke = '#001E2B'; circleFill = '#00ED64'; textFill = '#001E2B'; bgFill = '#FFFFFF'; sw = 3;
+  } else {
+    stroke = '#001E2B'; circleFill = '#00684A'; textFill = '#FFFFFF'; bgFill = '#FFFFFF'; sw = 2;
+  }
+
+  return `
+    <rect x="${cx - w/2}" y="${cy - h/2}" width="${w}" height="${h}" rx="${r}" ry="${r}"
+      fill="${bgFill}" stroke="${stroke}" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cy}" r="${cr}" fill="${circleFill}"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
+      font-size="${s * 0.20}" font-weight="700" fill="${textFill}"
+      font-family="'SF Mono','Consolas','Courier New',monospace">{ }</text>
+    ${state === 'DOWN' ? `
+      <line x1="${cx - cr*0.65}" y1="${cy - cr*0.65}" x2="${cx + cr*0.65}" y2="${cy + cr*0.65}" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="${cx + cr*0.65}" y1="${cy - cr*0.65}" x2="${cx - cr*0.65}" y2="${cy + cr*0.65}" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>` : ''}
+  `;
+}
+
+// ═══ js/cap.js ═══
+// ─── CAP THEOREM ENGINE ──────────────────────────────────────────────────────
+
+function getCAPScores() {
+  let c = 0.5, a = 0.5;
+  const tab = S.tab;
+  let wc, rp, rc, j;
+
+  if (tab === 'rs') {
+    wc = $('rs-wc')?.value || 'wmaj';
+    rp = $('rs-rp')?.value || 'primary';
+    rc = 'majority'; j = true;
+  } else if (tab === 'wc') {
+    wc = $('wc-w')?.value  || 'wmaj';
+    rp = $('wc-rp')?.value || 'primary';
+    rc = $('wc-rc')?.value || 'majority';
+    j  = $('wc-j')?.value === 'true';
+  } else if (tab === 'mr') {
+    wc = 'wmaj'; rp = 'primaryPreferred'; rc = 'majority'; j = true;
+    const cfg = MR_CFGS[S.mr.config];
+    for (let si = 0; si < cfg.numShards; si++) {
+      const st = mrShardStatus(si);
+      if (st.down)     a -= 0.30;
+      else if (st.readOnly) a -= 0.18;
+    }
+  } else {
+    wc = 'wmaj'; rp = 'primary'; rc = 'majority'; j = true;
+  }
+
+  // Write concern deltas
+  if      (wc === 'w0')   { c -= 0.40; a += 0.35; }
+  else if (wc === 'w1')   { c -= 0.15; a += 0.15; }
+  else if (wc === 'wmaj') { c += 0.20; a -= 0.05; }
+  else if (wc === 'wall') { c += 0.35; a -= 0.30; }
+
+  // Journal
+  if (j) c += 0.05;
+
+  // Read preference deltas
+  if      (rp === 'primary')           { c += 0.20; }
+  else if (rp === 'primaryPreferred')  { c += 0.10; a += 0.05; }
+  else if (rp === 'nearest')           { a += 0.10; }
+  else if (rp === 'secondaryPreferred'){ a += 0.15; c -= 0.15; }
+  else if (rp === 'secondary')         { a += 0.28; c -= 0.25; }
+
+  // Read concern deltas
+  if      (rc === 'linearizable') { c += 0.15; a -= 0.08; }
+  else if (rc === 'majority')     { c += 0.08; }
+  else if (rc === 'available')    { a += 0.12; c -= 0.10; }
+  else if (rc === 'snapshot')     { c += 0.12; a -= 0.05; }
+
+  // Dead nodes in Tab 1 reduce availability
+  const dead = S.rs.nodes.filter(n => n.state === 'DOWN').length;
+  if (dead > 0) a -= dead * 0.12;
+
+  return { c: clamp(c, 0.05, 0.95), a: clamp(a, 0.05, 0.95) };
+}
+
+function updateCAP() {
+  const { c, a } = getCAPScores();
+  const ratio = c / (c + a);
+
+  // Move dot on triangle
+  const ax = 82, ay = 150, cpx = 208, cpy = 68;
+  const dx = ax + ratio * (cpx - ax);
+  const dy = ay + ratio * (cpy - ay);
+  ['cap-dot', 'cap-dot-ring'].forEach(id => {
+    const el = $(id);
+    if (el) { el.setAttribute('cx', dx); el.setAttribute('cy', dy); }
+  });
+  const lbl = $('cap-dot-lbl');
+  if (lbl) { lbl.setAttribute('x', dx + 10); lbl.setAttribute('y', dy + 4); }
+
+  // Slider dot
+  $('cap-slider-dot').style.left = (ratio * 100) + '%';
+
+  // Mode badge
+  const badge = $('cap-mode-badge');
+  let mode, cls, dotTxt;
+  if      (ratio > 0.65) { mode = 'CP — Consistency Priority'; cls = 'cm-cp';  dotTxt = 'CP'; }
+  else if (ratio < 0.38) { mode = 'AP — Availability Priority'; cls = 'cm-ap'; dotTxt = 'AP'; }
+  else                   { mode = 'Balanced (PA/EC)';            cls = 'cm-bal'; dotTxt = '~'; }
+  if (badge) { badge.textContent = mode; badge.className = 'cap-mode ' + cls; }
+  if (lbl) lbl.textContent = dotTxt;
+
+  // Qualitative metric labels
+  const cLabel   = c > 0.65 ? 'High' : c > 0.4 ? 'Medium' : 'Low';
+  const aLabel   = a > 0.65 ? 'High' : a > 0.4 ? 'Medium' : 'Low';
+  const durLabel = c > 0.65 ? 'High' : c > 0.4 ? 'Medium' : 'Low';
+
+  // Write latency label — order-of-magnitude based on active write concern
+  let _wc = 'wmaj';
+  if (S.tab === 'rs') _wc = $('rs-wc')?.value || 'wmaj';
+  else if (S.tab === 'wc') _wc = $('wc-w')?.value || 'wmaj';
+  const latLabel = _wc === 'w0' ? '< 1ms' : _wc === 'w1' ? '~1–5ms' : _wc === 'wmaj' ? '~10–30ms' : '~50–150ms';
+  const latPct   = _wc === 'w0' ? 10      : _wc === 'w1' ? 25       : _wc === 'wmaj' ? 50          : 80;
+
+  const qualPct = { High: 85, Medium: 50, Low: 20 };
+  [
+    ['consistency', qualPct[cLabel], cLabel,   'var(--green)'],
+    ['availability', qualPct[aLabel], aLabel,  'var(--gcp)'],
+    ['latency',      latPct,         latLabel, 'var(--warn)'],
+  ].forEach(([id, pct, label, color]) => {
+    const f = $('m-' + id), v = $('mv-' + id);
+    if (f) { f.style.width = pct + '%'; f.style.background = color; }
+    if (v) v.textContent = label;
+  });
+  $('m-durability').style.width  = qualPct[durLabel] + '%';
+  $('mv-durability').textContent = durLabel;
+
+  // Narrative description
+  const desc = $('cap-desc-text');
+  if (desc) {
+    if      (ratio > 0.7)  desc.innerHTML = `MongoDB is configured for <span class="cap-hl">strong consistency (CP)</span>. Every read returns the most recently majority-committed write. During a network partition, the minority side will stop accepting writes to preserve data integrity.`;
+    else if (ratio > 0.5)  desc.innerHTML = `MongoDB leans <span class="cap-hl">CP with good availability</span>. Majority write acknowledgment ensures durability. Reads from the primary guarantee freshness.`;
+    else if (ratio > 0.35) desc.innerHTML = `<span class="cap-hl">Balanced configuration</span>. Reads spread across nodes for throughput. Some staleness is possible on secondary reads.`;
+    else                   desc.innerHTML = `MongoDB is configured for <span class="cap-hl">high availability (AP)</span>. Every node can serve reads. Stale reads are possible — data is <em>eventually consistent</em>.`;
+  }
+
+  // Active settings table
+  const cfg = $('cap-config-tbl');
+  if (cfg) {
+    const tab = S.tab;
+    let wc = '—', rp = '—', rc = '—';
+    if (tab === 'rs') {
+      wc = $('rs-wc')?.options[$('rs-wc')?.selectedIndex]?.text || '—';
+      rp = $('rs-rp')?.value || '—';
+      rc = 'majority';
+    }
+    if (tab === 'wc') {
+      wc = $('wc-w')?.options[$('wc-w')?.selectedIndex]?.text || '—';
+      rp = $('wc-rp')?.value || '—';
+      rc = $('wc-rc')?.value || '—';
+    }
+    const healthy = S.rs.nodes.filter(n => n.state === 'HEALTHY').length;
+    cfg.innerHTML = `
+      <div class="irow"><span class="ik">writeConcern</span><span class="iv">${wc.split('(')[0].trim()}</span></div>
+      <div class="irow"><span class="ik">readPreference</span><span class="iv">${rp}</span></div>
+      <div class="irow"><span class="ik">readConcern</span><span class="iv">${rc}</span></div>
+      <div class="irow"><span class="ik">Nodes Up</span><span class="iv">${healthy}/${S.rs.nodes.length}</span></div>`;
+  }
+}
+
+// ═══ js/tab-rs.js ═══
+// ─── TAB 1: REPLICA SET & FAILOVER ───────────────────────────────────────────
+
+function rsGetDistribution(size, numRegions) {
+  // Spread nodes as evenly as possible; front regions get the extra node
+  const base  = Math.floor(size / numRegions);
+  const extra = size % numRegions;
+  return Array.from({ length: numRegions }, (_, i) => base + (i < extra ? 1 : 0));
+}
+
+function rsNodeProvDefault(globalIdx) {
+  return NODE_PROV_DEFAULTS[globalIdx % NODE_PROV_DEFAULTS.length];
+}
+
+function rsBuildNodes() {
+  const size       = parseInt($('rs-size')?.value || 3);
+  const numRegions = parseInt($('rs-dist')?.value || 2);
+  const counts     = rsGetDistribution(size, numRegions);
+  const nodes = [];
+  let idx = 0;
+  counts.forEach((count, ri) => {
+    for (let ni = 0; ni < count; ni++, idx++) {
+      const provider   = $('rs-nprov-rs' + idx)?.value || rsNodeProvDefault(idx);
+      const regionName = REGION_NAMES[ri][provider];
+      nodes.push({
+        id: `rs${idx}`, host: `rs${idx}.${regionName}`,
+        role: idx === 0 ? 'PRIMARY' : 'SECONDARY', state: 'HEALTHY',
+        votes: 1, priority: idx === 0 ? 2 : 1,
+        dc: regionName, region: ri, provider,
+      });
+    }
+  });
+  return nodes;
+}
+
+function rsRenderProviderSelectors() {
+  const numRegions = parseInt($('rs-dist')?.value || 2);
+  const size       = parseInt($('rs-size')?.value  || 3);
+  const counts     = rsGetDistribution(size, numRegions);
+  const el = $('rs-region-providers'); if (!el) return;
+
+  let html = '', globalIdx = 0;
+  for (let ri = 0; ri < numRegions; ri++) {
+    html += `<div style="margin:7px 0 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Region ${ri + 1}</div>`;
+    for (let ni = 0; ni < counts[ri]; ni++, globalIdx++) {
+      const nodeId = `rs${globalIdx}`;
+      const cur  = $('rs-nprov-' + nodeId)?.value || rsNodeProvDefault(globalIdx);
+      const role = globalIdx === 0 ? 'PRIMARY' : 'SECONDARY';
+      html += `<label class="fld" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:10px;color:var(--text2);min-width:90px">${nodeId} <span style="color:var(--text3)">(${role})</span></span>
+        <select id="rs-nprov-${nodeId}" onchange="rsReconfigure()" style="flex:1;padding:4px 6px;font-size:11px">
+          <option value="aws"   ${cur === 'aws'   ? 'selected' : ''}>AWS</option>
+          <option value="gcp"   ${cur === 'gcp'   ? 'selected' : ''}>GCP</option>
+          <option value="azure" ${cur === 'azure' ? 'selected' : ''}>Azure</option>
+        </select>
+      </label>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function rsShowBanner(state) {
+  // state: 'none' | 'election' | 'readonly' | 'down'
+  $('ro-banner')  ?.classList.toggle('show', state === 'readonly');
+  $('down-banner')?.classList.toggle('show', state === 'down');
+  // elex-banner managed separately by rsStartElection / rsCompleteElection
+}
+
+function rsUpdateQuorumInfo() {
+  const el = $('rs-quorum-info'); if (!el) return;
+  const total    = S.rs.nodes.length;
+  const healthy  = S.rs.nodes.filter(n => n.state === 'HEALTHY').length;
+  const majority = Math.floor(total / 2) + 1;
+  const canFail  = majority - 1;
+  el.innerHTML = `Majority: <strong>${majority}/${total}</strong> nodes · Can tolerate <strong>${canFail}</strong> failure${canFail !== 1 ? 's' : ''} · ${healthy} currently healthy`;
+}
+
+function rsReconfigure() {
+  clearInterval(S.rs.electionInterval);
+  S.rs.electing = false;
+  $('elex-banner').classList.remove('show');
+  rsShowBanner('none');
+  rsRenderProviderSelectors();
+  S.rs.nodes = rsBuildNodes();
+  rsUpdateQuorumInfo();
+  rsRender();
+  updateCAP();
+}
+
+function rsComputeLayout() {
+  const nodes      = S.rs.nodes;
+  const numRegions = parseInt($('rs-dist')?.value || 2);
+  const counts     = rsGetDistribution(nodes.length, numRegions);
+
+  const nodeSize   = nodes.length <= 3 ? 54 : nodes.length <= 5 ? 48 : 42;
+  const hPitch     = nodeSize + 58;
+  const vPitch     = nodeSize + 54;
+  const W          = 660;
+  const maxPerRow  = Math.max(1, Math.floor(620 / hPitch));
+  const clientH    = 60;
+  const regHeaderH = 30;
+  const regPadTop  = 18;
+  const regPadBot  = 38;
+  const regGap     = 10;
+
+  // Build visual boxes: one per (geographic-region × cloud-provider) combination
+  const visualBoxDefs = [];
+  let nodeIdx = 0;
+  for (let ri = 0; ri < numRegions; ri++) {
+    const regionNodes = nodes.slice(nodeIdx, nodeIdx + counts[ri]);
+    const provOrder = [], provMap = {};
+    regionNodes.forEach(n => {
+      const p = n.provider || 'aws';
+      if (!provMap[p]) { provMap[p] = []; provOrder.push(p); }
+      provMap[p].push(n);
+    });
+    provOrder.forEach(p => visualBoxDefs.push({ ri, provider: p, boxNodes: provMap[p] }));
+    nodeIdx += counts[ri];
+  }
+
+  const positions = {}, regionBoxes = [];
+  let curY = clientH + 10;
+
+  visualBoxDefs.forEach(vb => {
+    const { ri, provider, boxNodes } = vb;
+    const count = boxNodes.length;
+    const rows  = Math.ceil(count / maxPerRow);
+    const boxH  = regHeaderH + regPadTop + rows * vPitch + regPadBot;
+
+    regionBoxes.push({ x: 8, y: curY, w: W - 16, h: boxH, ri, provider, count });
+
+    boxNodes.forEach((n, ni) => {
+      const row        = Math.floor(ni / maxPerRow);
+      const col        = ni % maxPerRow;
+      const nodesInRow = Math.min(maxPerRow, count - row * maxPerRow);
+      const rowW       = nodesInRow * hPitch - (hPitch - nodeSize);
+      const startX     = (W - rowW) / 2 + nodeSize / 2;
+      positions[n.id]  = {
+        x: startX + col * hPitch,
+        y: curY + regHeaderH + regPadTop + nodeSize * 0.6 + row * vPitch,
+      };
+    });
+    curY += boxH + regGap;
+  });
+
+  const H = curY + 10;
+  return { positions, regionBoxes, H, nodeSize };
+}
+
+function rsRender() {
+  const c = $('rs-svg-container'); if (!c) return;
+  const nodes = S.rs.nodes;
+  const { positions, regionBoxes, H, nodeSize } = rsComputeLayout();
+  const primary     = nodes.find(n => n.role === 'PRIMARY' && n.state === 'HEALTHY');
+  const majority    = Math.floor(nodes.length / 2) + 1;
+  const healthy     = nodes.filter(n => n.state === 'HEALTHY').length;
+  const quorumCount = nodes.filter(n => n.state === 'HEALTHY' || n.state === 'VOTING').length;
+
+  let svg = `<svg viewBox="0 0 660 ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;display:block;margin:0 auto">
+  <defs>
+    <pattern id="dotsRS" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
+    <marker id="arrRS" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
+    <marker id="arrRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#D4801A"/></marker>
+  </defs>
+  <rect width="660" height="${H}" fill="url(#dotsRS)" rx="8"/>`;
+
+  // HA/DR labels: only when exactly 2 regions selected
+  const numRegions2 = parseInt($('rs-dist')?.value || 1);
+  const totalByRi = {};
+  regionBoxes.forEach(b => { totalByRi[b.ri] = (totalByRi[b.ri] || 0) + b.count; });
+  const riCounts    = Object.values(totalByRi);
+  const maxRiCount  = Math.max(...riCounts);
+  const minRiCount  = Math.min(...riCounts);
+  const hadrTag = (ri) => {
+    if (numRegions2 !== 2 || maxRiCount === minRiCount) return '';
+    return totalByRi[ri] === maxRiCount ? ' (for High Availability)' : ' (for Disaster Recovery)';
+  };
+
+  regionBoxes.forEach(box => {
+    const p     = PROV[box.provider];
+    const rname = REGION_NAMES[box.ri][box.provider];
+    const tag   = hadrTag(box.ri);
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="${p.bg}" stroke="${p.border}" stroke-width="1.5"/>`;
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="${p.color}"/>`;
+    svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="${p.color}"/>`;
+    svg += `<text x="${box.x + box.w/2}" y="${box.y + 17}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${p.label} · ${rname} · ${box.count} node${box.count > 1 ? 's' : ''}${tag}</text>`;
+  });
+
+  // Client Application box
+  svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
+  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+
+  // Arrow client → primary (WRITES) or → surviving nodes (READ-ONLY)
+  const readOnly = quorumCount < majority;
+  let arrowLabelSvg = '';
+
+  if (primary && !readOnly) {
+    const pp = positions[primary.id];
+    if (pp) {
+      const ax1 = 330, ay1 = 48, ax2 = pp.x, ay2 = pp.y - nodeSize * 0.6;
+      const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
+      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#FF6B35" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
+      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#FF6B35"/>`;
+      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#FFF4E6"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+    }
+  } else if (readOnly) {
+    nodes.filter(n => n.state === 'HEALTHY').forEach(n => {
+      const pp = positions[n.id]; if (!pp) return;
+      const ax1 = 330, ay1 = 48, ax2 = pp.x, ay2 = pp.y - nodeSize * 0.6;
+      const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
+      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#D4801A" stroke-width="1.5" stroke-dasharray="5 3" class="hb" marker-end="url(#arrRO)"/>`;
+      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#D4801A"/>`;
+      arrowLabelSvg += `<rect x="${lx - 24}" y="${ly - 9}" width="48" height="14" rx="4" fill="#FEF3E2"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8" font-weight="700" fill="#92400E" font-family="Lexend Deca,sans-serif">READ-ONLY</text>`;
+    });
+  }
+
+  // Replication & heartbeat lines (drawn before nodes so they appear underneath)
+  if (primary) {
+    const pp = positions[primary.id];
+    nodes.filter(n => n.id !== primary.id).forEach(n => {
+      const np = positions[n.id]; if (!pp || !np) return;
+      svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="${n.state === 'HEALTHY' ? '#CBD5E1' : '#FCA5A5'}" stroke-width="1.5"/>`;
+      if (n.state === 'HEALTHY')
+        svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="rgba(0,104,74,0.5)" stroke-width="2" class="repl"/>`;
+    });
+  }
+  // Cross-secondary heartbeat
+  const secs = nodes.filter(n => n.role === 'SECONDARY' && n.state === 'HEALTHY');
+  for (let i = 0; i < secs.length - 1; i++) {
+    const p1 = positions[secs[i].id], p2 = positions[secs[i + 1].id];
+    if (p1 && p2)
+      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4" class="hb"/>`;
+  }
+
+  // Nodes
+  nodes.forEach(n => {
+    const pos = positions[n.id]; if (!pos) return;
+    const isPri = n.role === 'PRIMARY', isDead = n.state === 'DOWN', isVoting = n.state === 'VOTING';
+    svg += `<g id="rsn-${n.id}" style="cursor:pointer">`;
+    if (isPri && !isDead) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="${nodeSize * 0.75}" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
+    svg += mdbNodeIcon(pos.x, pos.y, nodeSize, n.state, n.role);
+    const lblY = pos.y + nodeSize * 0.83;
+    svg += `<text x="${pos.x}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="#64748B" font-family="Lexend Deca,sans-serif">${n.host}</text>`;
+    const isRO = readOnly && !isDead && !isPri;
+    const bc = isDead ? '#FEE2E2' : isPri ? '#DCFCE7' : isRO ? '#FEF3C7' : '#DBEAFE';
+    const tc = isDead ? '#991B1B' : isPri ? '#166534' : isRO ? '#92400E' : '#1E40AF';
+    const lbl = isDead ? 'DOWN' : isVoting ? 'VOTING…' : isRO ? 'READ-ONLY' : n.role;
+    svg += `<rect x="${pos.x - 26}" y="${lblY + 5}" width="52" height="15" rx="7" fill="${bc}"/>`;
+    svg += `<text x="${pos.x}" y="${lblY + 15}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${lbl}</text>`;
+    if (n.provider && !isDead) {
+      const pv = PROV[n.provider];
+      svg += `<rect x="${pos.x - 18}" y="${lblY + 23}" width="36" height="11" rx="4" fill="${pv.color}22" stroke="${pv.color}" stroke-width="0.8"/>`;
+      svg += `<text x="${pos.x}" y="${lblY + 31}" text-anchor="middle" font-size="7.5" font-weight="700" fill="${pv.color}" font-family="Lexend Deca,sans-serif">${pv.label}</text>`;
+    }
+    svg += `</g>`;
+  });
+
+  // Arrow labels on top of nodes
+  svg += arrowLabelSvg;
+
+  // Quorum status bar
+  const electing = S.rs.electing;
+  const quorumOk = quorumCount >= majority;
+  const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#166534' : '#92400E';
+  const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#DCFCE7' : '#FEF3C7';
+  const stMsg    = electing
+    ? `⚡ Election in progress — ${quorumCount}/${nodes.length} nodes voting · ${majority} required · driver holding writes`
+    : healthy === 0
+      ? `🔴 Complete outage — 0/${nodes.length} nodes healthy · No reads or writes possible`
+      : quorumOk
+        ? `✓ Quorum: ${quorumCount}/${nodes.length} healthy · ${majority} required · Writes operational`
+        : `⚠ Quorum: ${healthy}/${nodes.length} healthy · ${majority} required · Below majority — READ-ONLY mode`;
+  svg += `<rect x="8" y="${H - 16}" width="644" height="14" rx="4" fill="${stBg}"/>`;
+  svg += `<text x="330" y="${H - 6}" text-anchor="middle" font-size="9" font-weight="600" fill="${stColor}" font-family="Lexend Deca,sans-serif">${stMsg}</text>`;
+
+  svg += `</svg>`;
+  c.innerHTML = svg;
+
+  // Attach click handlers
+  nodes.forEach(n => {
+    const el = c.querySelector('#rsn-' + n.id);
+    if (el) el.addEventListener('click', () => rsToggleNode(n.id));
+  });
+  rsUpdateQuorumInfo();
+}
+
+async function rsToggleNode(id) {
+  if (S.rs.electing) return;
+  const n = S.rs.nodes.find(nd => nd.id === id); if (!n) return;
+  const majority = Math.floor(S.rs.nodes.length / 2) + 1;
+
+  // ── RECOVERY ────────────────────────────────────────────────────────────────
+  if (n.state === 'DOWN') {
+    n.state = 'HEALTHY'; n.role = 'SECONDARY';
+    log('SUCCESS', 'RS', `${n.host} recovered — rejoining as SECONDARY, syncing oplog`);
+    const healthy   = S.rs.nodes.filter(nd => nd.state === 'HEALTHY').length;
+    const hasPrimary = S.rs.nodes.some(nd => nd.role === 'PRIMARY' && nd.state === 'HEALTHY');
+    if (healthy >= majority) {
+      rsShowBanner('none');
+      if (!hasPrimary) {
+        log('SUCCESS', 'RS', `Majority restored (${healthy}/${S.rs.nodes.length}) — triggering election to elect new Primary`);
+        log('WARN', 'DRIVER', 'Retryable writes active — driver holding operations until Primary is elected. No data will be lost.');
+        rsStartElection();
+      } else {
+        log('SUCCESS', 'RS', `Majority restored (${healthy}/${S.rs.nodes.length}) — writes fully operational again`);
+        rsRender(); updateCAP();
+      }
+    } else {
+      log('INFO', 'RS', `Node recovered but majority not yet reached (${healthy}/${S.rs.nodes.length}) — remaining in READ-ONLY mode`);
+      rsShowBanner('readonly');
+      rsRender(); updateCAP();
+    }
+    return;
+  }
+
+  // ── FAILURE ──────────────────────────────────────────────────────────────────
+  const wasPrimary = n.role === 'PRIMARY';
+  n.state = 'DOWN';
+  const healthy = S.rs.nodes.filter(nd => nd.state === 'HEALTHY').length;
+
+  const rsBannerState = () => {
+    if (healthy === 0) return 'down';
+    if (healthy < majority) return 'readonly';
+    return 'none';
+  };
+
+  if (wasPrimary) {
+    log('ERROR', 'RS', `Primary ${n.host} is UNREACHABLE`);
+    if (healthy >= majority) {
+      log('WARN', 'DRIVER', 'Retryable writes active — driver is holding all incoming operations. No data will be lost.');
+      rsStartElection();
+    } else if (healthy === 0) {
+      log('ERROR', 'RS', 'All nodes are DOWN — complete outage');
+      rsShowBanner('down');
+      rsRender(); updateCAP();
+    } else {
+      log('WARN', 'RS', `Only ${healthy}/${S.rs.nodes.length} nodes healthy — majority (${majority}) cannot be reached`);
+      log('INFO', 'RS', 'No downtime — replica set enters READ-ONLY mode. Reads are still served normally.');
+      rsShowBanner('readonly');
+      rsRender(); updateCAP();
+    }
+  } else {
+    log('WARN', 'RS', `Secondary ${n.host} went DOWN`);
+    if (healthy === 0) {
+      log('ERROR', 'RS', 'All nodes are DOWN — complete outage. No reads or writes possible.');
+      rsShowBanner('down');
+    } else if (healthy < majority) {
+      log('WARN', 'RS', `Below majority (${healthy}/${S.rs.nodes.length}) — writes suspended`);
+      log('INFO', 'RS', 'No downtime — reads continue normally. Writes resume automatically when majority is restored.');
+      rsShowBanner('readonly');
+    } else {
+      rsShowBanner('none');
+      log('INFO', 'RS', `${healthy} nodes healthy — majority (${majority}) maintained. Fully operational.`);
+    }
+    rsRender(); updateCAP();
+  }
+}
+
+async function rsStartElection() {
+  S.rs.electing = true;
+  $('elex-banner').classList.add('show');
+  S.rs.nodes.filter(n => n.state === 'HEALTHY').forEach(n => n.state = 'VOTING');
+  rsRender();
+  let count = 10;
+  $('elex-count').textContent = count;
+  S.rs.electionInterval = setInterval(() => {
+    $('elex-count').textContent = --count;
+    if (count <= 0) { clearInterval(S.rs.electionInterval); rsCompleteElection(); }
+  }, 1000);
+}
+
+function rsCompleteElection() {
+  $('elex-banner').classList.remove('show');
+  S.rs.electing = false;
+  const candidates = S.rs.nodes.filter(n => n.state === 'VOTING');
+  if (!candidates.length) {
+    S.rs.nodes.filter(n => n.state === 'VOTING').forEach(n => n.state = 'HEALTHY');
+    rsRender(); return;
+  }
+  candidates.sort((a, b) => b.priority - a.priority);
+  candidates.forEach(n => { n.state = 'HEALTHY'; n.role = 'SECONDARY'; });
+  candidates[0].role = 'PRIMARY';
+  log('SUCCESS', 'ELECTION', `${candidates[0].host} elected new PRIMARY (priority:${candidates[0].priority})`);
+  log('SUCCESS', 'DRIVER', 'Operations resumed — driver transparently retried all held writes. Zero data loss.');
+  rsRender(); updateCAP();
+}
+
+function rsReset() {
+  clearInterval(S.rs.electionInterval);
+  S.rs.electing = false;
+  $('elex-banner').classList.remove('show');
+  rsShowBanner('none');
+  const wc = $('rs-wc'); if (wc) wc.value = 'wmaj';
+  const rp = $('rs-rp'); if (rp) rp.value = 'primary';
+  S.rs.nodes = rsBuildNodes();
+  log('SUCCESS', 'RS', 'Replica set reset to healthy state · writeConcern: w:"majority" · readPreference: primary');
+  rsRender(); updateCAP();
+}
+
+function updateConcerns() { updateCAP(); }
+
+// ═══ js/tab-wc.js ═══
+// ─── TAB 2: WRITE / READ CONCERNS ────────────────────────────────────────────
+
+function wcRender() {
+  const c = $('wc-svg-container'); if (!c) return;
+  const wc = $('wc-w')?.value  || 'wmaj';
+  const rp = $('wc-rp')?.value || 'primary';
+  const rc = $('wc-rc')?.value || 'majority';
+  const j  = $('wc-j')?.value === 'true';
+
+  // How many nodes ACK for a 3-node RS
+  const acksNeeded = wc === 'w0' ? 0 : wc === 'w1' ? 1 : wc === 'wmaj' ? 2 : 3;
+
+  // Node layout: PRIMARY top-center, two secondaries bottom
+  const npos = [
+    { x: 290, y: 170, role: 'PRIMARY',   id: 'rs0' },
+    { x: 100, y: 320, role: 'SECONDARY', id: 'rs1' },
+    { x: 480, y: 320, role: 'SECONDARY', id: 'rs2' },
+  ];
+  const readTarget = rp === 'secondary' || rp === 'secondaryPreferred' ? 1
+                   : rp === 'nearest' ? 2 : 0;
+
+  let svg = `<svg viewBox="0 0 580 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`;
+  svg += `<defs>
+    <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
+    <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
+    <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#22C55E"/></marker>
+    <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+    <marker id="arrOL" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="rgba(0,104,74,0.65)"/></marker>
+  </defs>`;
+  svg += `<rect width="580" height="400" fill="url(#dots2)" rx="8"/>`;
+
+  // CLIENT APP
+  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="290" y="28" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+
+  // ── WRITE PATH: App → Primary ──
+  // When read also targets primary (readTarget===0), fan arrows apart to avoid label overlap
+  const pri = npos[0];
+  const sameTarget = readTarget === 0;
+  const wX1 = sameTarget ? 300 : 290;
+  const wLineY1 = 56, wLineY2 = pri.y - 28;
+
+  if (acksNeeded === 0) {
+    // w:0 fire-and-forget — grey dashed, no ACK back
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#F1F5F9" stroke="#CBD5E1"/>`;
+    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
+  } else {
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#FF6B35" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
+    const wLabelX = sameTarget ? 330 : 315;
+    const wLabelY = sameTarget ? 80 : 88;
+    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#FFF4E6"/>`;
+    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+    // ACK back from Primary to App
+    const ackEndX  = sameTarget ? wX1 + 4 : wX1 - 12;
+    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
+    const ackLabelX = sameTarget ? 336 : 262;
+    const ackLabelY = sameTarget ? 100 : 87;
+    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#F0FDF4"/>`;
+    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">ACK</text>`;
+  }
+
+  // ── REPLICATION LINES: Primary → Secondaries ──
+  for (let i = 1; i <= 2; i++) {
+    const sec = npos[i];
+    const needsAck = acksNeeded > i;
+    const color = needsAck ? 'rgba(0,104,74,0.6)' : '#CBD5E1';
+    const sw    = needsAck ? 2 : 1.5;
+    const cls   = needsAck ? 'class="repl"' : 'stroke-dasharray="4 4"';
+    svg += `<line x1="${pri.x}" y1="${pri.y}" x2="${sec.x}" y2="${sec.y - 28}" stroke="${color}" stroke-width="${sw}" ${cls} ${needsAck ? 'marker-end="url(#arrOL)"' : ''}/>`;
+    const mx = (pri.x + sec.x) / 2 + (i === 1 ? -14 : 8);
+    const my = (pri.y + sec.y - 28) / 2 - 4;
+    if (needsAck) {
+      svg += `<rect x="${mx - 16}" y="${my - 8}" width="32" height="13" rx="3" fill="#F0FDF4"/>`;
+      svg += `<text x="${mx}" y="${my + 1}" text-anchor="middle" font-size="8" fill="#166534" font-family="Lexend Deca,sans-serif">oplog</text>`;
+    }
+  }
+
+  // ── READ PATH ──
+  // When targeting primary and write also goes primary, shift read arrow left
+  const rt   = npos[readTarget];
+  const rdX1 = sameTarget ? 270 : 278;
+  const rdX2 = sameTarget ? (pri.x - 10) : rt.x + (readTarget === 1 ? 12 : (readTarget === 2 ? -12 : 3));
+  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#3B82F6" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
+  const rlx = sameTarget ? 245 : ((rdX1 + rdX2) / 2 + (readTarget === 1 ? -18 : readTarget === 2 ? 12 : 8));
+  const rly = sameTarget ? 88  : (56 + rt.y - 28) / 2;
+  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#EFF6FF" stroke="#BFDBFE"/>`;
+  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#1D4ED8" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
+
+  // ── NODES ──
+  npos.forEach((pos, i) => {
+    const isPri    = i === 0;
+    const isReadTgt = i === readTarget;
+    const hasAck   = (isPri && acksNeeded >= 1) || (!isPri && acksNeeded > i);
+    svg += `<g>`;
+    if (isPri) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="36" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
+    svg += mdbNodeIcon(pos.x, pos.y, 54, null, pos.role);
+    svg += `<text x="${pos.x}" y="${pos.y + 42}" text-anchor="middle" font-size="9" fill="#64748B" font-family="Lexend Deca,sans-serif">${pos.id}:27017</text>`;
+    const bc = isPri ? '#DCFCE7' : '#DBEAFE', tc = isPri ? '#166534' : '#1E40AF';
+    svg += `<rect x="${pos.x - 28}" y="${pos.y + 49}" width="56" height="16" rx="8" fill="${bc}"/>`;
+    svg += `<text x="${pos.x}" y="${pos.y + 60}" text-anchor="middle" font-size="9" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${pos.role}</text>`;
+    if (hasAck) {
+      svg += `<circle cx="${pos.x + 25}" cy="${pos.y - 25}" r="10" fill="#22C55E" stroke="#fff" stroke-width="2"/>`;
+      svg += `<text x="${pos.x + 25}" y="${pos.y - 20}" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">✓</text>`;
+    }
+    if (isReadTgt) {
+      svg += `<circle cx="${pos.x - 25}" cy="${pos.y - 25}" r="10" fill="#3B82F6" stroke="#fff" stroke-width="2"/>`;
+      svg += `<text x="${pos.x - 25}" y="${pos.y - 20}" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">R</text>`;
+    }
+    svg += `</g>`;
+  });
+
+  // ── CORNER PILLS: journal + readConcern ──
+  svg += `<rect x="6" y="6" width="86" height="28" rx="6" fill="${j ? '#F0FDF4' : '#F8FAFC'}" stroke="${j ? '#86EFAC' : '#E2E8F0'}" stroke-width="1"/>`;
+  svg += `<text x="49" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">j: ${j ? 'true' : 'false'}</text>`;
+  svg += `<text x="49" y="28" text-anchor="middle" font-size="7.5" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">${j ? 'disk journal ✓' : 'memory only'}</text>`;
+
+  const rcColor = rc === 'linearizable' ? '#7C3AED' : rc === 'majority' ? '#166534' : rc === 'snapshot' ? '#0369A1' : '#92400E';
+  const rcBg    = rc === 'linearizable' ? '#EDE9FE' : rc === 'majority' ? '#F0FDF4' : rc === 'snapshot' ? '#E0F2FE' : '#FFF7ED';
+  const rcBdr   = rc === 'linearizable' ? '#C4B5FD' : rc === 'majority' ? '#86EFAC' : rc === 'snapshot' ? '#7DD3FC' : '#FED7AA';
+  svg += `<rect x="488" y="6" width="86" height="28" rx="6" fill="${rcBg}" stroke="${rcBdr}" stroke-width="1"/>`;
+  svg += `<text x="531" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${rcColor}" font-family="Lexend Deca,sans-serif">rc: ${rc}</text>`;
+  svg += `<text x="531" y="28" text-anchor="middle" font-size="7.5" fill="${rcColor}" font-family="Lexend Deca,sans-serif">${rc === 'majority' ? 'committed ✓' : rc === 'linearizable' ? 'linearizable' : rc === 'snapshot' ? 'snapshot' : 'local state'}</text>`;
+
+  svg += `</svg>`;
+  c.innerHTML = svg;
+}
+
+function wcUpdate() {
+  const wc = $('wc-w')?.value  || 'wmaj';
+  const j  = $('wc-j')?.value === 'true';
+  const rc = $('wc-rc')?.value || 'majority';
+  const rp = $('wc-rp')?.value || 'primary';
+
+  // Explanatory header
+  const wcExplTexts = {
+    w0:   '<strong>w:0 — Fire &amp; forget.</strong> The driver sends the write and returns immediately without waiting for any server response. Zero latency overhead, zero durability guarantee. A server crash before applying the write loses that data silently. Only appropriate for non-critical telemetry or metrics.',
+    w1:   '<strong>w:1 — Primary acknowledged.</strong> MongoDB waits for the Primary to apply the write (to memory and journal if j:true), then sends ACK to the driver. Fast, but if the Primary crashes before replicating to any Secondary, the write can be lost during failover.',
+    wmaj: '<strong>w:&quot;majority&quot; — Recommended for financial data.</strong> A majority of voting nodes (2 of 3 here) must apply and acknowledge the write. This guarantees the write survives any single-node failure, including an immediate Primary crash followed by election. The new Primary will always have the write.',
+    wall: '<strong>w:&quot;all&quot; — Maximum durability.</strong> Every node in the replica set must confirm the write. Safest option, but writes fail (or hang) if any node is down or slow. Use only when absolute durability is more important than availability.',
+  };
+  const expl = $('wc-explanation');
+  if (expl) expl.innerHTML = wcExplTexts[wc] || '';
+
+  // Per-setting descriptions
+  const wcDescs = {
+    w0:   'No ACK. Driver returns as soon as the request is sent over the network.',
+    w1:   'ACK from the Primary node only. Replication to secondaries is asynchronous.',
+    wmaj: 'ACK required from majority of voting nodes (2 of 3). Survives any single-node failure.',
+    wall: 'ACK from all 3 nodes required. Highest durability; writes fail if any node is unreachable.',
+  };
+  const jDescs = {
+    true:  'Server writes to on-disk WAL (journal) before sending ACK — survives power failure or process crash.',
+    false: 'ACK sent once write is in memory. A server crash before journal flush may lose an acknowledged write.',
+  };
+  const rcDescs = {
+    local:        "Returns the node's local snapshot — may include writes not yet replicated to majority. Risk of dirty reads during failover.",
+    available:    'Fastest, weakest: may read orphaned documents in sharded clusters. Avoid for financial reads.',
+    majority:     'Only returns data committed by a majority — prevents dirty reads. Recommended for financial data.',
+    linearizable: 'Strongest: guarantees reads reflect all prior majority-committed writes. Reads always go to Primary and coordinate with majority — adds round-trip latency.',
+    snapshot:     'Consistent point-in-time snapshot across the transaction. Required for multi-document ACID transactions.',
+  };
+  const rpDescs = {
+    primary:           'Reads always go to the Primary — guarantees zero replication lag.',
+    primaryPreferred:  'Prefer Primary; automatically fall back to Secondary if Primary is unreachable.',
+    secondary:         'Always read from a Secondary — may see stale data, but reduces load on Primary.',
+    secondaryPreferred:'Prefer Secondary for read scaling; falls back to Primary if none available.',
+    nearest:           'Read from geographically closest node (lowest ping). Best latency, may be stale.',
+  };
+
+  const set = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+  set('wc-w-desc',  wcDescs[wc] || '');
+  set('wc-j-desc',  jDescs[j ? 'true' : 'false'] || '');
+  set('wc-rc-desc', rcDescs[rc] || '');
+  set('wc-rp-desc', rpDescs[rp] || '');
+
+  // Mode label
+  const labels = { w0: '⚡ Max Throughput', w1: 'Durable (Primary)', wmaj: '✅ Recommended', wall: '🔒 Max Durability' };
+  const el = $('wc-mode-label'); if (el) el.textContent = labels[wc] || '';
+
+  wcRender();
+  updateCAP();
+  log('INFO', 'CONCERNS', `w:${wc} j:${j} readPreference:${rp} readConcern:${rc}`);
+}
+
+async function wcSimWrite() {
+  const btn = $('btn-sim-write'); btn.disabled = true;
+  const wc  = $('wc-w')?.value || 'wmaj';
+  const j   = $('wc-j')?.value === 'true';
+  const acks = wc === 'w0' ? 0 : wc === 'w1' ? 1 : wc === 'wmaj' ? 2 : 3;
+  log('INFO', 'WRITE', 'Driver sending write operation to Primary...');
+  await sleep(250);
+  if (j) { log('INFO', 'WRITE', 'Primary applying write to oplog + journal (disk flush)...'); await sleep(300); }
+  else   { log('INFO', 'WRITE', 'Primary applying write to memory buffer (no journal flush)...'); await sleep(150); }
+  if (acks === 0) {
+    log('WARN', 'WRITE', 'w:0 — driver returned immediately. No acknowledgment sent by server.');
+  } else {
+    log('SUCCESS', 'WRITE', 'Primary applied write → ACK (w:1)');
+    if (acks >= 2) { await sleep(480); log('SUCCESS', 'WRITE', 'Secondary rs1 applied via oplog replication → majority (2/3) reached'); }
+    if (acks === 3){ await sleep(320); log('SUCCESS', 'WRITE', 'Secondary rs2 applied → all nodes confirmed (w:all)'); }
+    log('SUCCESS', 'WRITE', `✓ Write committed — ${acks} node${acks > 1 ? 's' : ''} acknowledged. Driver unblocked.`);
+  }
+  await sleep(300); btn.disabled = false;
+}
+
+async function wcSimRead() {
+  const btn = $('btn-sim-read'); btn.disabled = true;
+  const rp  = $('wc-rp')?.value || 'primary';
+  const rc  = $('wc-rc')?.value || 'majority';
+  const targets = {
+    primary:           'rs0 (PRIMARY)',
+    primaryPreferred:  'rs0 (PRIMARY, preferred)',
+    secondary:         'rs1 (SECONDARY)',
+    secondaryPreferred:'rs1 (SECONDARY, preferred)',
+    nearest:           'rs2 (nearest)',
+  };
+  log('INFO', 'READ', `Read request → driver resolving target node (readPreference: ${rp})`);
+  await sleep(300);
+  log('INFO', 'READ', `Routing to ${targets[rp]}`);
+  await sleep(350);
+  if (rc === 'linearizable') {
+    log('WARN', 'READ', 'readConcern:linearizable — coordinating with majority to confirm no later writes exist...');
+    await sleep(700);
+  }
+  const freshness = (rc === 'local' || rc === 'available')
+    ? 'local node snapshot (may be slightly stale)'
+    : rc === 'majority' ? 'majority-committed data'
+    : rc === 'linearizable' ? 'linearizable — reflects all prior writes'
+    : 'snapshot-consistent (transaction)';
+  log('SUCCESS', 'READ', `Document returned. Freshness: ${freshness}`);
+  await sleep(300); btn.disabled = false;
+}
+
+// ═══ js/tab-mr.js ═══
+// ─── TAB 3: MULTI-REGION GLOBAL CLUSTER ──────────────────────────────────────
+
+// Build fresh nodeHealth[si][ri][ni]=true for a given config
+function mrInitNodeHealth(cfg) {
+  return cfg.shardDist.map(dist =>
+    dist.map(cnt => Array.from({ length: cnt }, () => true))
+  );
+}
+
+// True when every node in region ri (across all shards) is down
+function mrRegionAllDown(ri) {
+  const cfg = MR_CFGS[S.mr.config];
+  for (let si = 0; si < cfg.numShards; si++)
+    for (let ni = 0; ni < cfg.shardDist[si][ri]; ni++)
+      if (S.mr.nodeHealth[si][ri][ni]) return false;
+  return true;
+}
+
+// True when node (si,ri,ni) is the current PRIMARY of its shard
+function mrIsNodePrimary(si, ri, ni) {
+  if (S.mr.primaryRegion[si] !== ri) return false;
+  const cfg = MR_CFGS[S.mr.config];
+  for (let n = 0; n < cfg.shardDist[si][ri]; n++) {
+    if (S.mr.nodeHealth[si][ri][n]) return n === ni;
+  }
+  return false;
+}
+
+function mrShardStatus(si) {
+  const cfg  = MR_CFGS[S.mr.config];
+  const dist = cfg.shardDist[si];
+  const total = dist.reduce((a, b) => a + b, 0);
+  const majority = Math.floor(total / 2) + 1;
+  let healthyNodes = 0;
+  for (let ri = 0; ri < cfg.regions.length; ri++)
+    for (let ni = 0; ni < dist[ri]; ni++)
+      if (S.mr.nodeHealth[si][ri][ni]) healthyNodes++;
+  return {
+    total, majority, healthyNodes,
+    readOnly: healthyNodes > 0 && healthyNodes < majority,
+    down:     healthyNodes === 0,
+  };
+}
+
+// Index of first healthy node for shard si in region r, or -1 if none
+function mrFirstHealthyNodeIn(si, r) {
+  const cfg = MR_CFGS[S.mr.config];
+  if (r < 0 || r >= cfg.regions.length) return -1;
+  for (let n = 0; n < cfg.shardDist[si][r]; n++)
+    if (S.mr.nodeHealth[si][r][n]) return n;
+  return -1;
+}
+
+// ── Election banner helpers ───────────────────────────────────────────────────
+
+function mrShowElexBanner(si) {
+  const cfg = MR_CFGS[S.mr.config];
+  const el = $('mr-elex-banner'), lbl = $('mr-elex-label');
+  if (el) el.style.display = 'block';
+  if (lbl) lbl.textContent = `Shard ${si + 1} (${cfg.shardZones[si]})`;
+  const ro = $('mr-ro-banner');
+  if (ro) ro.style.display = 'none';
+}
+
+function mrHideElexBanner() {
+  const el = $('mr-elex-banner'); if (el) el.style.display = 'none';
+}
+
+function mrShowROBanner() {
+  const cfg = MR_CFGS[S.mr.config];
+  const anyElecting = S.mr.shardElecting.some(Boolean);
+  if (anyElecting) return;
+  const anyRO = [...Array(cfg.numShards).keys()].some(si => {
+    const st = mrShardStatus(si); return st.readOnly || st.down;
+  });
+  const el = $('mr-ro-banner'); if (!el) return;
+  el.style.display = anyRO ? 'block' : 'none';
+  if (anyRO) {
+    const roShards = [...Array(cfg.numShards).keys()].filter(si => {
+      const st = mrShardStatus(si); return st.readOnly || st.down;
+    });
+    $('mr-ro-title').textContent = `📖 Shard${roShards.length > 1 ? 's' : ''} ${roShards.map(i => `${i + 1}`).join(', ')} in READ-ONLY mode`;
+  }
+}
+
+function mrHideROBanner() {
+  const el = $('mr-ro-banner'); if (el) el.style.display = 'none';
+}
+
+function mrUpdateBanners() {
+  const anyElecting = S.mr.shardElecting.some(Boolean);
+  if (anyElecting) return; // elex banner already shown by mrStartElection
+  mrHideElexBanner();
+  mrShowROBanner();
+}
+
+// ── Election engine (per shard) ───────────────────────────────────────────────
+
+async function mrStartElection(si) {
+  if (S.mr.shardElecting[si]) return;
+  S.mr.shardElecting[si] = true;
+  log('WARN', 'DRIVER', `Shard ${si + 1}: retryable writes active — driver holding all operations`);
+  mrShowElexBanner(si);
+  mrRender(); mrUpdateInfo(); updateCAP();
+
+  let count = 8;
+  $('mr-elex-count').textContent = count;
+  await new Promise(resolve => {
+    const iv = setInterval(() => {
+      if (!S.mr.shardElecting[si]) { clearInterval(iv); resolve(); return; }
+      $('mr-elex-count').textContent = --count;
+      if (count <= 0) { clearInterval(iv); resolve(); }
+    }, 400);
+  });
+  if (S.mr.shardElecting[si]) mrCompleteElection(si);
+}
+
+function mrCompleteElection(si) {
+  S.mr.shardElecting[si] = false;
+  const cfg    = MR_CFGS[S.mr.config];
+  const homeRI = cfg.primaryRegion[si];
+  let targetRI = mrFirstHealthyNodeIn(si, homeRI) >= 0 ? homeRI : -1;
+  if (targetRI < 0) {
+    for (let r = 0; r < cfg.regions.length; r++)
+      if (mrFirstHealthyNodeIn(si, r) >= 0) { targetRI = r; break; }
+  }
+  if (targetRI >= 0) {
+    S.mr.primaryRegion[si] = targetRI;
+    log('SUCCESS', 'ELECTION', `Shard ${si + 1}: NEW PRIMARY elected in ${cfg.regions[targetRI].name}${targetRI !== homeRI ? ' (temporary — home unavailable)' : ''}`);
+    log('SUCCESS', 'DRIVER',   `Shard ${si + 1}: retryable writes resumed — zero data loss`);
+  } else {
+    S.mr.primaryRegion[si] = -1;
+    log('ERROR', 'RS', `Shard ${si + 1}: election failed — no candidates (READ-ONLY)`);
+  }
+  mrHideElexBanner();
+  mrShowROBanner();
+  mrRender(); mrUpdateInfo(); updateCAP();
+}
+
+// ── SVG helpers (extracted from mrRender) ────────────────────────────────────
+
+// Draw backend→node arrow with WRITES/READ-ONLY label; returns SVG string
+function mrArrow(ax1, ay1, ax2, ay2, si, curved) {
+  const st     = mrShardStatus(si);
+  const ro     = st.readOnly || st.down;
+  const stroke = ro ? '#3B82F6' : '#FF9900';
+  const marker = ro ? 'url(#arrMRRO)' : 'url(#arrMRO)';
+  const lbl    = st.down ? null : ro ? 'READ-ONLY' : 'WRITES';
+  const lbg    = ro ? '#EFF6FF'  : '#FFF4E6';
+  const ltx    = ro ? '#1E3A8A'  : '#C2410C';
+
+  let out = '';
+  if (curved) {
+    out += `<path d="M${ax1},${ay1} C${ax1},${ay1 + 28} ${ax2},${ay2 - 28} ${ax2},${ay2}" fill="none" stroke="${stroke}" stroke-width="1.6" stroke-dasharray="5 3" marker-end="${marker}"/>`;
+  } else {
+    out += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="${stroke}" stroke-width="1.8" stroke-dasharray="5 3" marker-end="${marker}"/>`;
+  }
+  if (lbl) {
+    const lx = (ax1 + ax2) / 2, ly = (ay1 + ay2) / 2;
+    const lw = ro ? 60 : 42;
+    out += `<rect x="${lx - lw/2}" y="${ly - 8}" width="${lw}" height="14" rx="4" fill="${lbg}"/>`;
+    out += `<text x="${lx}" y="${ly + 2}" text-anchor="middle" font-size="8" font-weight="700" fill="${ltx}" font-family="Lexend Deca,sans-serif">${lbl}</text>`;
+  }
+  return out;
+}
+
+// Find best target node for a shard to draw an arrow to (PRIMARY first, then any healthy)
+// nodePos: the per-column position map built in mrRender; numR: region count
+function mrBestTarget(si, preferRi, nodePos, numR) {
+  for (const tryRi of [preferRi, ...Array.from({ length: numR }, (_, i) => i)].filter(v => v != null)) {
+    const nd = nodePos[tryRi]?.find(n => n.si === si && n.role === 'PRIMARY' && S.mr.nodeHealth[n.si][n.ri][n.ni]);
+    if (nd) return nd;
+  }
+  for (let ri2 = 0; ri2 < numR; ri2++) {
+    const nd = nodePos[ri2].find(n => n.si === si && S.mr.nodeHealth[n.si][n.ri][n.ni]);
+    if (nd) return nd;
+  }
+  return null;
+}
+
+// Node icon for Tab 3 (shard-coloured, different from Tab 1 mdbNodeIcon)
+function mrNodeSVG(cx, cy, si, role, dn, voting) {
+  const s = 44, w = s * 0.92, h = s * 0.92, rv = s * 0.18, cr = s * 0.30;
+  const sc = MR_SC[si % MR_SC.length];
+  let stroke, circleFill, textFill, bgFill, sw;
+  if (dn) {
+    stroke = '#C0392B'; circleFill = '#FEE2E2'; textFill = '#C0392B'; bgFill = '#FFF5F5'; sw = 2.5;
+  } else if (voting) {
+    stroke = '#D97706'; circleFill = '#FCD34D'; textFill = '#92400E'; bgFill = '#FFFBEB'; sw = 2;
+  } else if (role === 'PRIMARY') {
+    stroke = sc.border; circleFill = sc.bright; textFill = '#001E2B'; bgFill = '#FFFFFF'; sw = 3;
+  } else {
+    stroke = sc.border; circleFill = sc.dark;   textFill = '#FFFFFF'; bgFill = '#FFFFFF'; sw = 2;
+  }
+  const cross = dn ? `
+    <line x1="${cx - cr*0.65}" y1="${cy - cr*0.65}" x2="${cx + cr*0.65}" y2="${cy + cr*0.65}" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="${cx + cr*0.65}" y1="${cy - cr*0.65}" x2="${cx - cr*0.65}" y2="${cy + cr*0.65}" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round"/>` : '';
+  return `<rect x="${cx - w/2}" y="${cy - h/2}" width="${w}" height="${h}" rx="${rv}" ry="${rv}" fill="${bgFill}" stroke="${stroke}" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cy}" r="${cr}" fill="${circleFill}"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${s * 0.20}" font-weight="700" fill="${textFill}" font-family="'SF Mono','Consolas','Courier New',monospace">{ }</text>
+    ${cross}`;
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+
+function mrRender() {
+  const c = $('mr-svg-container'); if (!c) return;
+  const cfg  = MR_CFGS[S.mr.config];
+  const numR = cfg.regions.length, numS = cfg.numShards;
+
+  const SVG_W  = 700, lm = 10, colGap = 12;
+  const colW   = Math.floor((SVG_W - lm * 2 - colGap * (numR - 1)) / numR);
+  const cX     = ri => lm + ri * (colW + colGap);
+  const cCX    = ri => cX(ri) + colW / 2;
+  const is1B   = S.mr.config === '3r1b';
+  const topOffset   = is1B ? 90 : 0;
+  const hdrH   = 32, backY = topOffset + hdrH + 8, backH = 44;
+  const ns     = 44, nodeStartY = backY + backH + 28, nodeSpacing = 96;
+  const legendH = 42;
+
+  // Build per-column node list: primaries first
+  const ownedByRegion = Array.from({ length: numR }, () => []);
+  for (let si = 0; si < numS; si++)
+    if (S.mr.primaryRegion[si] >= 0 && !S.mr.shardElecting[si])
+      ownedByRegion[S.mr.primaryRegion[si]].push(si);
+
+  const colNodes = [];
+  for (let ri = 0; ri < numR; ri++) {
+    const list = [];
+    ownedByRegion[ri].forEach(si => {
+      const cnt = cfg.shardDist[si][ri];
+      for (let ni = 0; ni < cnt; ni++)
+        list.push({ si, ri, ni, role: mrIsNodePrimary(si, ri, ni) ? 'PRIMARY' : 'SECONDARY' });
+    });
+    for (let si = 0; si < numS; si++) {
+      if (ownedByRegion[ri].includes(si)) continue;
+      const cnt = cfg.shardDist[si][ri];
+      for (let ni = 0; ni < cnt; ni++) list.push({ si, ri, ni, role: 'SECONDARY' });
+    }
+    colNodes.push(list);
+  }
+
+  const maxNodes = Math.max(...colNodes.map(l => l.length));
+  const SVG_H   = nodeStartY + maxNodes * nodeSpacing + legendH + 10;
+  const nodePos = colNodes.map((list, ri) =>
+    list.map((n, i) => ({ ...n, x: cCX(ri), y: nodeStartY + i * nodeSpacing }))
+  );
+
+  let svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+  <defs>
+    <pattern id="dotsMR" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
+    <marker id="arrMRO"  markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF9900"/></marker>
+    <marker id="arrMRRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+  </defs>
+  <rect width="${SVG_W}" height="${SVG_H}" fill="url(#dotsMR)" rx="8"/>`;
+
+  // ── Region column backgrounds ──────────────────────────────────────────────
+  cfg.regions.forEach((reg, ri) => {
+    const x = cX(ri), w = colW, allDn = mrRegionAllDown(ri);
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${SVG_H - legendH - 6 - topOffset}" rx="10" fill="${allDn ? '#FEF2F2' : '#FFFDF7'}" stroke="${allDn ? '#FCA5A5' : '#FFD08A'}" stroke-width="${allDn ? 2 : 1.5}"/>`;
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${hdrH}" rx="10" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
+    svg += `<rect x="${x}" y="${topOffset + hdrH - 8}" width="${w}" height="8" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
+    svg += `<text x="${cCX(ri)}" y="${topOffset + 15}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${reg.name}</text>`;
+    svg += `<text x="${cCX(ri)}" y="${topOffset + 27}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.9)" font-family="Lexend Deca,sans-serif">${reg.short}</text>`;
+    if (allDn) {
+      const midY = topOffset + (SVG_H - legendH - topOffset) / 2;
+      svg += `<text x="${cCX(ri)}" y="${midY}"      text-anchor="middle" font-size="56" fill="rgba(239,83,80,0.09)">&#x2298;</text>`;
+      svg += `<text x="${cCX(ri)}" y="${midY + 26}" text-anchor="middle" font-size="11" font-weight="700" fill="#DC2626" font-family="Lexend Deca,sans-serif">REGION DOWN</text>`;
+    }
+  });
+
+  // ── Backend boxes + arrows ──────────────────────────────────────────────────
+  if (is1B) {
+    // External backend above the region cards — communicates mongos routing
+    const ebW = 220, ebX = SVG_W / 2 - 110, ebY = 8, ebH = 58;
+    svg += `<rect x="${ebX}" y="${ebY}" width="${ebW}" height="${ebH}" rx="8" fill="#fff" stroke="#FFD08A" stroke-width="1.5"/>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 13}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">APPLICATION BACKEND</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 27}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 42}" text-anchor="middle" font-size="8" fill="#92400E" font-family="Lexend Deca,sans-serif">mongos routes writes → each shard's Primary</text>`;
+
+    const srcX = SVG_W / 2, srcY = ebY + ebH;
+    // Count targets per x-column for spread offset when 2 shards land on same column post-failover
+    const colCount = {}, colIdx = {};
+    for (let si = 0; si < numS; si++) {
+      const t = mrBestTarget(si, null, nodePos, numR);
+      if (t) colCount[t.x] = (colCount[t.x] || 0) + 1;
+    }
+    for (let si = 0; si < numS; si++) {
+      const t = mrBestTarget(si, null, nodePos, numR); if (!t) continue;
+      const total = colCount[t.x] || 1, idx = colIdx[t.x] || 0; colIdx[t.x] = idx + 1;
+      const spread = total > 1 ? (idx - (total - 1) / 2) * 16 : 0;
+      svg += mrArrow(srcX, srcY, t.x + spread, t.y - ns * 0.57, si, true);
+    }
+  } else {
+    // 3r3b / 2r2b: each regional backend connects only to its home shard's local PRIMARY
+    cfg.regions.forEach((reg, ri) => {
+      if (mrRegionAllDown(ri)) return;
+      if (!cfg.backends.includes(ri)) return;
+      const cx = cCX(ri), bw = Math.min(colW - 18, 110), bx = cx - bw / 2;
+      svg += `<rect x="${bx}" y="${backY}" width="${bw}" height="${backH}" rx="7" fill="#fff" stroke="#FFD08A" stroke-width="1.3"/>`;
+      svg += `<text x="${cx}" y="${backY + 12}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">BACKEND</text>`;
+      svg += `<text x="${cx}" y="${backY + 24}" text-anchor="middle" font-size="9" font-weight="600" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+      svg += `<text x="${cx}" y="${backY + 36}" text-anchor="middle" font-size="7.5" fill="#92400E" font-family="Lexend Deca,sans-serif">local reads &amp; writes</text>`;
+      // Only draw arrow when this region's home shard has a live PRIMARY here (no fallback)
+      const homeSi   = cfg.primaryRegion.indexOf(ri);
+      if (homeSi < 0) return;
+      const localPri = nodePos[ri].find(n =>
+        n.si === homeSi && n.role === 'PRIMARY' && S.mr.nodeHealth[n.si][n.ri][n.ni]
+      );
+      if (localPri) svg += mrArrow(cx, backY + backH, cx, localPri.y - ns * 0.57, homeSi, false);
+    });
+  }
+
+  // ── Nodes ──────────────────────────────────────────────────────────────────
+  for (let ri = 0; ri < numR; ri++) {
+    nodePos[ri].forEach(n => {
+      const { x, y, si, ri: r, ni, role } = n;
+      const sc     = MR_SC[si % MR_SC.length];
+      const isPri  = role === 'PRIMARY';
+      const dn     = !S.mr.nodeHealth[si][r][ni];
+      const voting = !dn && S.mr.shardElecting[si];
+      svg += `<g onclick="mrToggleNode(${si},${r},${ni})" style="cursor:pointer">`;
+      if (isPri  && !dn) svg += `<circle cx="${x}" cy="${y}" r="${ns * 0.75}" fill="none" stroke="${sc.bright}" stroke-width="1.5" class="pring" opacity="0.4"/>`;
+      if (voting)        svg += `<circle cx="${x}" cy="${y}" r="${ns * 0.75}" fill="none" stroke="#F59E0B"   stroke-width="1.5" class="pring" opacity="0.5"/>`;
+      svg += mrNodeSVG(x, y, si, role, dn, voting);
+      const lblY    = y + ns * 0.50;
+      const pillBg  = dn ? '#EF4444' : voting ? '#F59E0B' : isPri ? sc.border : '#E2E8F0';
+      const pillTx  = dn || voting || isPri ? '#fff' : sc.text;
+      const pillTxt = dn ? 'DOWN' : voting ? 'VOTING…' : role;
+      svg += `<rect x="${x - 30}" y="${lblY}" width="60" height="14" rx="6" fill="${pillBg}"/>`;
+      svg += `<text x="${x}" y="${lblY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="${pillTx}" font-family="Lexend Deca,sans-serif">${pillTxt}</text>`;
+      svg += `<text x="${x}" y="${lblY + 24}" text-anchor="middle" font-size="7.5" fill="${dn ? '#EF4444' : voting ? '#D97706' : sc.text}" font-family="Lexend Deca,sans-serif">${cfg.shardZones[si]}</text>`;
+      svg += `</g>`;
+    });
+  }
+
+  // ── Legend bar ──────────────────────────────────────────────────────────────
+  const legY  = SVG_H - legendH + 4;
+  const slotW = (SVG_W - lm * 2) / numS;
+  svg += `<rect x="${lm}" y="${legY}" width="${SVG_W - lm * 2}" height="${legendH - 4}" rx="6" fill="rgba(255,255,255,0.78)"/>`;
+  for (let si = 0; si < numS; si++) {
+    const sc       = MR_SC[si % MR_SC.length];
+    const st       = mrShardStatus(si);
+    const electing = S.mr.shardElecting[si];
+    const ox = lm + si * slotW + 8;
+    const dotFill   = electing ? '#FCD34D' : sc.bright;
+    const dotBorder = electing ? '#D97706' : sc.border;
+    const nameColor = electing ? '#92400E' : sc.border;
+    const stC = electing ? '#D97706' : st.down ? '#6B7280' : st.readOnly ? '#DC2626' : '#16A34A';
+    const stT = electing ? '⚡ Electing…' : st.down ? '⊘ Unavailable' : st.readOnly ? '⚠ READ-ONLY' : '✓ Writable';
+    svg += `<circle cx="${ox + 5}" cy="${legY + 13}" r="5" fill="${dotFill}" stroke="${dotBorder}" stroke-width="1.2"/>`;
+    svg += `<text x="${ox + 14}" y="${legY + 17}" font-size="9" font-weight="600" fill="${nameColor}" font-family="Lexend Deca,sans-serif">Shard ${si + 1}</text>`;
+    svg += `<text x="${ox + 14}" y="${legY + 31}" font-size="8.5" font-weight="700" fill="${stC}" font-family="Lexend Deca,sans-serif">${stT}${!electing ? ' (' + st.healthyNodes + '/' + st.total + ')' : ''}</text>`;
+  }
+
+  svg += `</svg>`;
+  c.innerHTML = svg;
+}
+
+function mrUpdateInfo() {
+  const cfg = MR_CFGS[S.mr.config];
+  const lbl = $('mr-config-label'); if (lbl) lbl.textContent = cfg.label;
+  const desc = $('mr-pattern-desc'); if (desc) desc.innerHTML = cfg.desc;
+  const b2r = $('mr-2r-banner'); if (b2r) b2r.style.display = S.mr.config === '2r2b' ? 'block' : 'none';
+
+  const kb = $('mr-kill-btns');
+  if (kb) {
+    let html = '<div class="btn-row" style="flex-wrap:wrap;gap:6px">';
+    cfg.regions.forEach((r, ri) => {
+      html += mrRegionAllDown(ri)
+        ? `<button class="btn btn-g" onclick="mrReviveRegion(${ri})">↑ Revive ${r.short}</button>`
+        : `<button class="btn btn-r" onclick="mrKillRegion(${ri})">✕ Kill ${r.short}</button>`;
+    });
+    html += '</div><p style="font-size:13px;color:var(--text);font-weight:500;margin:8px 0 0">👆 Or click any node in the diagram to toggle it individually.</p>';
+    kb.innerHTML = html;
+  }
+}
+
+// ── Toggle individual node ────────────────────────────────────────────────────
+
+async function mrToggleNode(si, ri, ni) {
+  if (S.mr.shardElecting[si]) return;
+  const cfg   = MR_CFGS[S.mr.config];
+  const rName = cfg.regions[ri].name;
+  const wasHealthy = S.mr.nodeHealth[si][ri][ni];
+  const wasPrimary = mrIsNodePrimary(si, ri, ni);
+
+  if (wasHealthy) {
+    // Node going DOWN
+    S.mr.nodeHealth[si][ri][ni] = false;
+    log('ERROR', 'RS', `Shard ${si + 1}: node in ${rName} went DOWN`);
+    const st = mrShardStatus(si);
+    if (wasPrimary) {
+      S.mr.primaryRegion[si] = -1;
+      if (st.down) {
+        log('ERROR', 'RS', `Shard ${si + 1}: all nodes down — complete outage`);
+        mrHideElexBanner(); mrShowROBanner();
+        mrRender(); mrUpdateInfo(); updateCAP();
+      } else if (st.readOnly) {
+        log('ERROR', 'RS', `Shard ${si + 1}: majority lost (${st.healthyNodes}/${st.total}) — READ-ONLY`);
+        mrHideElexBanner(); mrShowROBanner();
+        mrRender(); mrUpdateInfo(); updateCAP();
+      } else {
+        mrStartElection(si);
+      }
+    } else {
+      if (st.down) {
+        S.mr.primaryRegion[si] = -1;
+        log('ERROR', 'RS', `Shard ${si + 1}: all nodes down — complete outage`);
+        mrHideElexBanner(); mrShowROBanner();
+      } else if (st.readOnly) {
+        S.mr.primaryRegion[si] = -1;
+        log('ERROR', 'RS', `Shard ${si + 1}: primary lost majority (${st.healthyNodes}/${st.total}) — stepping down`);
+        log('INFO',  'RS', `Shard ${si + 1}: entering READ-ONLY mode. Writes resume when majority is restored.`);
+        mrShowROBanner();
+      } else {
+        log('WARN', 'RS', `Shard ${si + 1}: secondary down — ${st.healthyNodes}/${st.total} healthy, writes continue`);
+        mrHideElexBanner(); mrHideROBanner();
+      }
+      mrRender(); mrUpdateInfo(); updateCAP();
+    }
+  } else {
+    // Node coming back UP
+    S.mr.nodeHealth[si][ri][ni] = true;
+    log('SUCCESS', 'RS', `Shard ${si + 1}: node in ${rName} back ONLINE — syncing oplog`);
+    const st     = mrShardStatus(si);
+    const homeRI = cfg.primaryRegion[si];
+    if (!st.readOnly && !st.down) {
+      if (S.mr.primaryRegion[si] === -1) {
+        const targetRI = mrFirstHealthyNodeIn(si, homeRI) >= 0 ? homeRI : ri;
+        S.mr.primaryRegion[si] = targetRI;
+        log('SUCCESS', 'RS', `Shard ${si + 1}: PRIMARY recovered in ${cfg.regions[targetRI].name}${targetRI !== homeRI ? ' (home not yet available)' : ''}`);
+      } else if (homeRI === ri && S.mr.primaryRegion[si] !== ri) {
+        log('INFO', 'RS', `Shard ${si + 1}: PRIMARY stepping back to home region ${rName}`);
+        S.mr.primaryRegion[si] = ri;
+      }
+    }
+    mrUpdateBanners();
+    mrRender(); mrUpdateInfo(); updateCAP();
+  }
+}
+
+// ── Kill / revive entire region ───────────────────────────────────────────────
+
+async function mrKillRegion(ri) {
+  const cfg = MR_CFGS[S.mr.config];
+  log('ERROR', 'ATLAS', `Simulating region failure: ${cfg.regions[ri].name}`);
+  for (let si = 0; si < cfg.numShards; si++)
+    for (let ni = 0; ni < cfg.shardDist[si][ri]; ni++)
+      S.mr.nodeHealth[si][ri][ni] = false;
+
+  for (let si = 0; si < cfg.numShards; si++) {
+    if (S.mr.shardElecting[si]) continue;
+    const st         = mrShardStatus(si);
+    const wasPrimary = S.mr.primaryRegion[si] === ri;
+    if (wasPrimary) S.mr.primaryRegion[si] = -1;
+    if (st.down) {
+      log('ERROR', 'RS', `Shard ${si + 1}: all nodes down`);
+    } else if (st.readOnly) {
+      if (wasPrimary) log('ERROR', 'RS', `Shard ${si + 1}: majority lost — READ-ONLY`);
+      else { S.mr.primaryRegion[si] = -1; log('ERROR', 'RS', `Shard ${si + 1}: majority lost — primary stepping down, READ-ONLY`); }
+    } else if (wasPrimary) {
+      mrStartElection(si);
+    }
+  }
+  mrShowROBanner();
+  mrRender(); mrUpdateInfo(); updateCAP();
+}
+
+function mrReviveRegion(ri) {
+  const cfg = MR_CFGS[S.mr.config];
+  for (let si = 0; si < cfg.numShards; si++)
+    for (let ni = 0; ni < cfg.shardDist[si][ri]; ni++)
+      S.mr.nodeHealth[si][ri][ni] = true;
+  log('SUCCESS', 'ATLAS', `Region ${cfg.regions[ri].name} restored`);
+  for (let si = 0; si < cfg.numShards; si++) {
+    if (S.mr.shardElecting[si]) continue;
+    const st     = mrShardStatus(si);
+    if (st.down) continue;
+    const homeRI = cfg.primaryRegion[si];
+    if (S.mr.primaryRegion[si] === -1 && !st.readOnly) {
+      const targetRI = mrFirstHealthyNodeIn(si, homeRI) >= 0 ? homeRI : ri;
+      S.mr.primaryRegion[si] = targetRI;
+      log('SUCCESS', 'RS', `Shard ${si + 1}: PRIMARY recovered in ${cfg.regions[targetRI].name}${targetRI !== homeRI ? ' (home not yet available)' : ''}`);
+    } else if (homeRI === ri && S.mr.primaryRegion[si] !== -1 && S.mr.primaryRegion[si] !== ri) {
+      log('INFO', 'RS', `Shard ${si + 1}: PRIMARY stepping back to home region ${cfg.regions[ri].name}`);
+      S.mr.primaryRegion[si] = ri;
+    }
+  }
+  mrUpdateBanners();
+  mrRender(); mrUpdateInfo(); updateCAP();
+}
+
+function mrReconfigure() {
+  const sel = $('mr-config'); if (!sel) return;
+  S.mr.config = sel.value;
+  const cfg = MR_CFGS[S.mr.config];
+  S.mr.nodeHealth    = mrInitNodeHealth(cfg);
+  S.mr.primaryRegion = [...cfg.primaryRegion];
+  S.mr.shardElecting = Array(cfg.numShards).fill(false);
+  mrHideElexBanner(); mrHideROBanner();
+  log('INFO', 'ATLAS', `Pattern: ${cfg.label}`);
+  mrRender(); mrUpdateInfo(); updateCAP();
+}
+
+function mrReset() {
+  const cfg = MR_CFGS[S.mr.config];
+  S.mr.nodeHealth    = mrInitNodeHealth(cfg);
+  S.mr.primaryRegion = [...cfg.primaryRegion];
+  S.mr.shardElecting = Array(cfg.numShards).fill(false);
+  mrHideElexBanner(); mrHideROBanner();
+  log('SUCCESS', 'ATLAS', `Reset — ${cfg.label} fully healthy`);
+  mrRender(); mrUpdateInfo(); updateCAP();
+}
+
+// ═══ js/main.js ═══
+// ─── MAIN — UI WIRING & INITIALISATION ───────────────────────────────────────
+
+function toggleCAPPanel() {
+  const main = document.getElementById('main');
+  const cap  = document.getElementById('cap');
+  const btn  = document.getElementById('cap-toggle-btn');
+  const open = main.classList.toggle('cap-visible');
+  cap.classList.toggle('cap-visible', open);
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '✕ Hide CAP' : '⬡ CAP Positioning';
+  if (open) updateCAP();
+}
+
+function switchTab(name) {
+  S.tab = name;
+  document.querySelectorAll('.tc').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  $('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.getAttribute('onclick').includes("'" + name + "'")) btn.classList.add('active');
+  });
+  if (name === 'rs') { rsRender(); updateConcerns(); }
+  if (name === 'wc') { wcRender(); wcUpdate(); }
+  if (name === 'mr') { mrRender(); mrUpdateInfo(); }
+  updateCAP();
+}
+
+window.onload = function () {
+  rsRenderProviderSelectors();
+  S.rs.nodes = rsBuildNodes();
+  rsRender();
+  rsUpdateQuorumInfo();
+  updateConcerns();
+
+  wcRender();
+  wcUpdate();
+
+  S.mr.nodeHealth    = mrInitNodeHealth(MR_CFGS[S.mr.config]);
+  S.mr.shardElecting = Array(MR_CFGS[S.mr.config].numShards).fill(false);
+  mrRender();
+  mrUpdateInfo();
+
+  updateCAP();
+
+  setInterval(() => {
+    if (S.tab === 'rs' && !S.rs.electing) {
+      const h = S.rs.nodes.filter(n => n.state === 'HEALTHY').length;
+      if (h > 0 && Math.random() > 0.7)
+        log('INFO', 'HEARTBEAT', `RS heartbeat OK — ${h} nodes healthy`);
+    }
+  }, 9000);
+};
+
+</script>
+</body>
+</html>

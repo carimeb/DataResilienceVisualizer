@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MongoDB Distributed Architecture & CAP Theorem Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#00684A;--green-light:#00ED64;--green-bg:#E8F5EE;
+  --bg:#FFFFFF;--bg1:#F0F4F8;--bg2:#F8FAFB;--bg3:#EEF2F6;
+  --border:#D8E2EC;--border2:#C5D4E0;
+  --text:#1A2B3C;--text2:#4A6070;--text3:#7A9AAA;
+  --pri-node:#00684A;--sec-node:#334E68;--dead-node:#C0392B;
+  --dead-bg:#FDF0EE;
+  --warn:#D4801A;--warn-bg:#FEF3E2;
+  --aws:#FF9900;--aws-bg:#FFF4E6;--aws-border:#FFD08A;
+  --gcp:#4285F4;--gcp-bg:#EAF1FF;--gcp-border:#A8C4F8;
+  --azure:#0078D4;--azure-bg:#E5F1FB;--azure-border:#90C4EE;
+  --mdb-dark:#001E2B;
+  --shadow:0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.07);
+}
+body{font-family:'Lexend Deca',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:12px}
+
+/* HEADER */
+#hdr{background:var(--mdb-dark);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.logo{font-size:16px;font-weight:700;color:var(--green-light);display:flex;align-items:center;gap:6px}
+.logo svg{width:20px;height:20px}
+.hdr-sub{font-size:12px;color:var(--green-light);flex:1}
+.hdr-badge{background:rgba(0,237,100,0.15);color:var(--green-light);border:1px solid rgba(0,237,100,0.35);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* TABS */
+#tab-nav{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
+.tab-btn{padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--text3);font-size:12px;font-weight:500;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green);font-weight:700}
+
+/* MAIN */
+#main{flex:1;display:grid;grid-template-columns:1fr;overflow:hidden;transition:grid-template-columns .3s ease}
+#main.cap-visible{grid-template-columns:1fr 300px}
+#viz{overflow-y:auto;padding:16px;background:var(--bg1)}
+#cap{background:#fff;overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
+#cap.cap-visible{display:flex}
+/* CAP toggle button */
+#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,0.12);color:var(--green-light);border:1px solid rgba(0,237,100,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
+#cap-toggle-btn:hover{background:rgba(0,237,100,0.22);border-color:rgba(0,237,100,0.55)}
+#cap-toggle-btn.active{background:rgba(0,237,100,0.25);border-color:var(--green-light)}
+.panel-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700}
+
+/* LOG */
+#log{height:90px;background:#F0F4F8;border-top:2px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
+.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid #DDE6EE;animation:fi .2s ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.lt{color:#7A9AAA}.li{color:#2563EB}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--green)}.lc{color:#5580A0}.lm{color:var(--text2)}
+
+/* TABS VISIBILITY */
+.tc{display:none}.tc.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.card-title .hl{color:var(--green)}
+
+/* CONTROLS */
+label.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:600}
+select{background:#fff;border:1px solid var(--border2);color:var(--text);padding:6px 9px;border-radius:6px;font-size:12px;font-family:'Lexend Deca',sans-serif;width:100%;cursor:pointer;box-shadow:var(--shadow-sm)}
+select:focus{outline:none;border-color:var(--green)}
+
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;transition:all .2s;border:none}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{background:#004F38}
+.btn-g{background:#fff;border:1.5px solid var(--green);color:var(--green)}.btn-g:hover{background:var(--green-bg)}
+.btn-d{background:#fff;border:1.5px solid var(--dead-node);color:var(--dead-node)}.btn-d:hover{background:var(--dead-bg)}
+.btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
+.btn-w{background:#fff;border:1.5px solid var(--warn);color:var(--warn)}.btn-w:hover{background:var(--warn-bg)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+button:disabled{opacity:.4;cursor:not-allowed}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase}
+.b-p{background:#DCFCE7;color:#166534}
+.b-s{background:#DBEAFE;color:#1E40AF}
+.b-d{background:#FEE2E2;color:#991B1B}
+.b-w{background:#FEF3C7;color:#92400E}
+
+/* SVG ANIMS */
+@keyframes pulse{0%,100%{r:30;opacity:.4}50%{r:40;opacity:0}}
+.pring{animation:pulse 2.2s ease-out infinite}
+@keyframes glow-p{0%,100%{filter:drop-shadow(0 0 5px rgba(0,104,74,.5))}50%{filter:drop-shadow(0 0 12px rgba(0,237,100,.7))}}
+.gnod{animation:glow-p 2.2s ease-in-out infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.repl{stroke-dasharray:8 4;animation:flow .7s linear infinite}
+@keyframes hbeat{0%,85%,100%{opacity:.2}10%,75%{opacity:.8}}
+.hb{animation:hbeat 1.8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.electing{animation:blink .6s ease-in-out infinite}
+
+/* LAYOUT */
+.two-col{display:grid;grid-template-columns:1fr 230px;gap:14px}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;font-size:11px}
+.li-leg{display:flex;align-items:center;gap:5px;color:var(--text2)}
+.ld{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+/* INSTRUCTIONS */
+.tip{background:#EAF4FF;border:1px solid #B6D9F7;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E4070;line-height:1.7;margin-bottom:12px}
+.tip strong{color:#1558A8;font-weight:700}
+
+/* INFO TABLE */
+.itbl{width:100%}
+.irow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.irow:last-child{border-bottom:none}
+.ik{color:var(--text3)}.iv{color:var(--text);font-weight:500}
+
+/* METRIC */
+.mrow{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px}
+.mlbl{color:var(--text2);flex:1}
+.mtrk{width:64px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.mfil{height:100%;border-radius:3px;transition:width .5s}
+.mval{color:var(--text);font-weight:600;min-width:32px;text-align:right}
+
+/* CAP */
+#cap-svg{width:100%}
+.cap-mode{padding:7px 10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700}
+.cm-cp{background:#DCFCE7;color:#14532D;border:1px solid #86EFAC}
+.cm-ap{background:#DBEAFE;color:#1E3A8A;border:1px solid #93C5FD}
+.cm-bal{background:#FEF3C7;color:#78350F;border:1px solid #FCD34D}
+.cap-desc{font-size:12px;color:var(--text2);line-height:1.65}
+.cap-hl{color:var(--green);font-weight:600}
+
+/* ELECTION BANNER */
+#elex-banner{display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:10px 14px;font-size:12px;color:#78350F;margin-bottom:12px;line-height:1.6}
+#elex-banner.show{display:block}
+.elex-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.elex-timer{font-size:22px;font-weight:800;font-family:monospace;color:#D97706;float:right}
+
+/* READ-ONLY / DOWNTIME BANNERS */
+#ro-banner{display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:12px;line-height:1.6}
+#ro-banner.show{display:block}
+#down-banner{display:none;background:#FEF2F2;border:1.5px solid #EF4444;border-radius:8px;padding:10px 14px;font-size:12px;color:#7F1D1D;margin-bottom:12px;line-height:1.6}
+#down-banner.show{display:block}
+.ro-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* TAB 2 — WRITE/READ CONCERN DESCRIPTIONS */
+.wc-desc{font-size:11px;color:var(--text2);line-height:1.65;margin-top:6px;padding:7px 10px;background:var(--bg1);border-radius:6px;border-left:3px solid var(--green)}
+.wc-desc strong{color:var(--text);font-weight:700}
+.wc-expl{font-size:12px;color:var(--text);line-height:1.75;padding:10px 13px;background:var(--bg2);border-radius:8px;margin-bottom:10px;border:1px solid var(--border)}
+.wc-expl strong{color:var(--green);font-weight:700}
+.wc-two-col{display:grid;grid-template-columns:1fr 260px;gap:14px}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="logo">
+    <svg viewBox="0 0 20 20" fill="none"><path d="M10 1.5C10 1.5 4.5 6.5 4.5 11.5C4.5 14.8 6.9 17.5 10 17.5C13.1 17.5 15.5 14.8 15.5 11.5C15.5 6.5 10 1.5 10 1.5Z" fill="#00ED64"/><line x1="10" y1="1.5" x2="10" y2="17.5" stroke="#001E2B" stroke-width="1.2"/></svg>
+    MongoDB
+  </div>
+  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span style="font-size:10px;opacity:0.55;margin-left:8px">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
+  <div class="hdr-badge">Interactive</div>
+  <button id="cap-toggle-btn" onclick="toggleCAPPanel()" title="Show/hide CAP Theorem positioning panel">⬡ CAP Positioning</button>
+</div>
+
+<div id="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('rs')">① Replica Set &amp; Failover</button>
+  <button class="tab-btn" onclick="switchTab('wc')">② Write / Read Concerns</button>
+  <button class="tab-btn" onclick="switchTab('mr')">③ Multi-Region Active-Active</button>
+</div>
+
+<div id="main">
+  <div id="viz">
+
+    <!-- TAB 1: REPLICA SET -->
+    <div id="tab-rs" class="tc active">
+      <div class="tip"><strong>Click any node</strong> to simulate a failure. If the Primary goes down, an election starts automatically. <strong>Click a failed node</strong> to bring it back online.</div>
+      <div id="elex-banner">
+        <div class="elex-title">⏳ Election in progress <span class="elex-timer" id="elex-count">10</span>s</div>
+        <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently — your application code does not need to handle this.</div>
+      </div>
+      <div id="ro-banner">
+        <div class="ro-title">📖 Replica Set in READ-ONLY mode — no downtime</div>
+        <div>The replica set has fallen below majority quorum. <strong>The database is still fully available for reads</strong> — no downtime has occurred. Writes are temporarily suspended to prevent data inconsistency. As soon as enough nodes come back online and majority is restored, writes resume automatically.</div>
+      </div>
+      <div id="down-banner">
+        <div class="ro-title">🔴 Complete outage — all nodes are DOWN</div>
+        <div>Every node in the replica set is unreachable. <strong>No reads or writes can be served.</strong> This is a full database outage. Restore at least one node to resume reads, and restore majority to resume writes.</div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Replica Set Topology</div>
+            <div class="leg">
+              <div class="li-leg"><div class="ld" style="background:var(--green)"></div> Primary</div>
+              <div class="li-leg"><div class="ld" style="background:var(--sec-node)"></div> Secondary</div>
+              <div class="li-leg"><div class="ld" style="background:var(--dead-node)"></div> Down</div>
+            </div>
+            <div id="rs-svg-container"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">RS Configuration</div>
+            <label class="fld"><span class="lbl">Number of Nodes</span>
+              <select id="rs-size" onchange="rsReconfigure()">
+                <option value="3" selected>3 nodes (minimum)</option>
+                <option value="5">5 nodes</option>
+                <option value="7">7 nodes</option>
+              </select>
+            </label>
+            <label class="fld"><span class="lbl">Region Distribution</span>
+              <select id="rs-dist" onchange="rsReconfigure()">
+                <option value="1" selected>Single region</option>
+                <option value="2">2 regions</option>
+                <option value="3">3 regions</option>
+              </select>
+            </label>
+            <div id="rs-region-providers"></div>
+            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;font-size:11px;color:#166534;line-height:1.5"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Write &amp; Read Concerns</div>
+            <label class="fld"><span class="lbl">Write Concern</span>
+              <select id="rs-wc" onchange="updateConcerns()">
+                <option value="w1">w: 1 — Primary only</option>
+                <option value="wmaj" selected>w: "majority" (recommended)</option>
+                <option value="wall">w: all nodes</option>
+                <option value="w0">w: 0 — Unacknowledged</option>
+              </select>
+            </label>
+            <label class="fld"><span class="lbl">Read Preference</span>
+              <select id="rs-rp" onchange="updateConcerns()">
+                <option value="primary" selected>primary</option>
+                <option value="primaryPreferred">primaryPreferred</option>
+                <option value="secondary">secondary</option>
+                <option value="secondaryPreferred">secondaryPreferred</option>
+                <option value="nearest">nearest</option>
+              </select>
+            </label>
+            <div class="btn-row">
+              <button class="btn btn-g" onclick="rsReset()">↺ Reset All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: WRITE/READ CONCERNS -->
+    <div id="tab-wc" class="tc">
+      <div class="tip"><strong>Write Concern</strong> controls <em>durability</em> — how many replica set nodes must confirm a write before the driver returns success. <strong>Read Concern</strong> controls <em>data freshness</em> — whether you see only majority-committed data or also in-flight writes. <strong>Read Preference</strong> controls <em>which node</em> serves the read. Adjust any setting to see how MongoDB's CAP position shifts.</div>
+      <div class="wc-two-col">
+        <!-- LEFT: SVG -->
+        <div>
+          <div class="card">
+            <div class="card-title">Acknowledgment Path <span class="hl" id="wc-mode-label"></span></div>
+            <div id="wc-explanation" class="wc-expl"></div>
+            <div id="wc-svg-container"></div>
+          </div>
+        </div>
+        <!-- RIGHT: Controls -->
+        <div>
+          <div class="card">
+            <div class="card-title">Write Concern</div>
+            <label class="fld"><span class="lbl">w (acknowledgment)</span>
+              <select id="wc-w" onchange="wcUpdate()">
+                <option value="w0">w: 0 — Unacknowledged</option>
+                <option value="w1">w: 1 — Primary only</option>
+                <option value="wmaj" selected>w: "majority"</option>
+                <option value="wall">w: all nodes</option>
+              </select>
+            </label>
+            <div id="wc-w-desc" class="wc-desc"></div>
+            <label class="fld" style="margin-top:10px"><span class="lbl">j (journal)</span>
+              <select id="wc-j" onchange="wcUpdate()">
+                <option value="false">false (memory only)</option>
+                <option value="true" selected>true (disk flush)</option>
+              </select>
+            </label>
+            <div id="wc-j-desc" class="wc-desc"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Read Settings</div>
+            <label class="fld"><span class="lbl">readConcern</span>
+              <select id="wc-rc" onchange="wcUpdate()">
+                <option value="local" selected>local (default)</option>
+                <option value="available">available (fastest)</option>
+                <option value="majority">majority</option>
+                <option value="linearizable">linearizable (strongest)</option>
+                <option value="snapshot">snapshot (transactions)</option>
+              </select>
+            </label>
+            <div id="wc-rc-desc" class="wc-desc"></div>
+            <label class="fld" style="margin-top:10px"><span class="lbl">readPreference</span>
+              <select id="wc-rp" onchange="wcUpdate()">
+                <option value="primary" selected>primary</option>
+                <option value="primaryPreferred">primaryPreferred</option>
+                <option value="secondary">secondary</option>
+                <option value="secondaryPreferred">secondaryPreferred</option>
+                <option value="nearest">nearest</option>
+              </select>
+            </label>
+            <div id="wc-rp-desc" class="wc-desc"></div>
+          </div>
+          <div class="btn-row" style="margin-top:4px">
+            <button class="btn btn-p" onclick="wcSimWrite()" id="btn-sim-write">▶ Simulate Write</button>
+            <button class="btn btn-g" onclick="wcSimRead()" id="btn-sim-read">▶ Simulate Read</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MULTI-REGION GLOBAL CLUSTER -->
+    <div id="tab-mr" class="tc">
+      <div id="mr-elex-banner" style="display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:10px 14px;font-size:12px;color:#78350F;margin-bottom:10px;line-height:1.6">
+        <div class="elex-title">⏳ Election in progress — <span id="mr-elex-label"></span> <span class="elex-timer" id="mr-elex-count"></span>s</div>
+        <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently.</div>
+      </div>
+      <div id="mr-ro-banner" style="display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:10px;line-height:1.6">
+        <div class="ro-title" id="mr-ro-title">📖 Shard in READ-ONLY mode</div>
+        <div>This shard has fallen below majority quorum. <strong>Reads are still served normally.</strong> Writes resume automatically once majority is restored.</div>
+      </div>
+      <div id="mr-2r-banner" style="display:none;background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:12px 16px;font-size:12px;color:#78350F;margin-bottom:10px;line-height:1.7">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">⚠ 2-Region topology — quorum limitation</div>
+        <div>Each shard distributes as <strong>2 nodes in the home region + 1 in DR</strong>. If the home region fails, the surviving DR node holds <strong>1 of 3 votes — below majority</strong>. That shard enters <strong>READ-ONLY mode automatically</strong>. This is deterministic: no concern setting changes it within 2 regions.</div>
+        <div style="margin-top:8px;padding:7px 10px;background:#fff;border-radius:6px;border:1px solid #FCD34D;color:#92400E;font-weight:600">
+          ✦ MongoDB recommendation: always deploy across <strong>3 or more regions</strong> to guarantee majority quorum survives any single-region failure with no manual intervention.
+        </div>
+      </div>
+      <div class="tip"><strong>MongoDB Global Cluster</strong> uses <strong>Zone Sharding</strong> to pin each region's data to a dedicated shard — every Backend writes to its local Primary, achieving true Active-Active with minimal latency. Cross-region oplog replication keeps data durable. <strong>Select a deployment pattern</strong> and <strong>simulate a zone or a region failure</strong> to see exactly which shards lose write access and why.</div>
+      <div class="wc-two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Global Cluster Topology <span class="hl" id="mr-config-label"></span></div>
+            <div id="mr-svg-container"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Deployment Pattern</div>
+            <label class="fld"><span class="lbl">Configuration</span>
+              <select id="mr-config" onchange="mrReconfigure()">
+                <option value="3r3b" selected>3 Regions · 3 Backends</option>
+                <option value="3r1b">3 Regions · 1 Backend</option>
+                <option value="2r2b">2 Regions · 2 Backends ⚠</option>
+              </select>
+            </label>
+            <div id="mr-pattern-desc" class="wc-desc"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Simulate Failure</div>
+            <div id="mr-kill-btns"></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn btn-g" onclick="mrReset()">↺ Restore All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div><!-- end #viz -->
+
+  <!-- CAP PANEL -->
+  <div id="cap">
+    <div class="panel-title">CAP Theorem Position</div>
+    <div style="background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;padding:7px 10px;font-size:10.5px;color:#713F12;line-height:1.6;margin-bottom:8px">
+      <strong style="display:block;margin-bottom:2px">📌 Simplified model — for illustration only</strong>
+      This panel is a directional compass, not a formal proof. It shows how write concern, read concern, and read preference collectively shift the durability/availability trade-off. MongoDB's actual behavior under network partition depends on topology, failure mode, and driver version. Use as a conversation anchor, not a specification.
+    </div>
+    <svg id="cap-svg" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#F0FDF4"/>
+          <stop offset="100%" stop-color="#EFF6FF"/>
+        </linearGradient>
+      </defs>
+      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="#CBD5E1" stroke-width="1.5"/>
+      <polygon points="150,45 85,158 215,158" fill="rgba(0,104,74,0.06)" stroke="rgba(0,104,74,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">C</text>
+      <text x="150" y="21" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Lexend Deca,sans-serif">Consistency</text>
+      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#1E40AF" font-family="Lexend Deca,sans-serif">A</text>
+      <text x="10" y="194" text-anchor="start" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Availability</text>
+      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#7E22CE" font-family="Lexend Deca,sans-serif">P</text>
+      <text x="292" y="194" text-anchor="end" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Partition</text>
+      <text x="150" y="128" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">MongoDB</text>
+      <text x="150" y="139" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">Operating Zone</text>
+      <circle id="cap-dot-ring" cx="185" cy="100" r="12" fill="none" stroke="rgba(0,104,74,0.3)" stroke-width="1.5">
+        <animate attributeName="r" values="10;20;10" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle id="cap-dot" cx="185" cy="100" r="7" fill="var(--green)" stroke="#fff" stroke-width="2">
+        <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text id="cap-dot-lbl" x="196" y="97" font-size="9" fill="var(--green)" font-weight="700" font-family="Lexend Deca,sans-serif">CP</text>
+    </svg>
+
+    <div class="cap-mode cm-cp" id="cap-mode-badge">CP — Consistency Priority</div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">C ↔ A Trade-off</div>
+      <div style="position:relative;height:18px;background:linear-gradient(to right,#DBEAFE,#FEF3C7,#DCFCE7);border-radius:4px;border:1px solid var(--border)">
+        <div id="cap-slider-dot" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left .6s ease;left:75%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">
+        <span>← Availability</span><span>Consistency →</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Impact Metrics</div>
+      <div class="mrow"><span class="mlbl">Consistency</span><div class="mtrk"><div class="mfil" id="m-consistency" style="background:var(--green);width:85%"></div></div><span class="mval" id="mv-consistency">High</span></div>
+      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--gcp);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
+      <div class="mrow"><span class="mlbl">Write Latency</span><div class="mtrk"><div class="mfil" id="m-latency" style="background:var(--warn);width:50%"></div></div><span class="mval" id="mv-latency">~10–30ms</span></div>
+      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:#7C3AED;width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Explanation</div>
+      <div class="cap-desc" id="cap-desc-text"></div>
+    </div>
+
+    <div>
+      <div class="panel-title" style="margin-bottom:6px">Active Settings</div>
+      <div class="itbl" id="cap-config-tbl"></div>
+    </div>
+  </div>
+</div>
+
+<div id="log">
+  <div class="lr"><span class="lt">00:00:00</span><span class="ls">INFO</span><span class="lc">SYSTEM</span><span class="lm">MongoDB CAP Visualizer — click any node or control to begin</span></div>
+</div>
+
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/cap.js"></script>
+<script src="js/tab-rs.js"></script>
+<script src="js/tab-wc.js"></script>
+<script src="js/tab-mr.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
