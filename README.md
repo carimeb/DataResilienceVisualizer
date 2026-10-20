@@ -1,125 +1,66 @@
-# MongoDB Data Resilience Visualizer
+# MongoDB Data Resilience Visualizer (v2)
 
-An interactive, browser-based tool for exploring MongoDB's distributed architecture concepts — replica set failover, write/read concerns, and multi-region active-active deployments — mapped live to the CAP theorem.
+Interactive simulator of a MongoDB Atlas replica set across regions and clouds. Take nodes down, lose a whole
+region, cut a region's network (partition), add or remove nodes and regions, and change the application's
+write concern, read preference and read concern. The page shows what the application sees (does the write
+succeed? where does the read go? can it be stale or rolled back?) and where the settings sit on a CAP compass.
 
-Built for MongoDB Atlas 8.3. No server required — runs entirely in the browser via `file://`.
+Every result is tagged with the MongoDB documentation rule it follows (see [RULES.md](RULES.md)).
+Interface in English (default) or Portuguese (PT-BR).
 
----
+## Use it
 
-## Quick Start
+Open `dist/data-resilience-visualizer.html` in a browser. It is a single file with no server and no build
+needed; share that file as is. Fonts load from Google Fonts when online and fall back to system fonts offline.
 
-### Option A — Modular (development)
+- Click a node to take it down or bring it back.
+- **Outage** loses the whole region. **Isolate** cuts its network from the other regions (a partition).
+- **− / +** change electable and read-only nodes per region (max 7 voting members). The last card adds a region (max 4).
+- Click the provider badge (AWS / GCP / Azure) or the region name to change them; ▲ raises a region's priority.
+- The **Scenario** menu loads guided cases (primary failure, region outage, 2-region trap, partition with w:1, local reads…).
 
-Open `index.html` directly in Chrome or Firefox. The page loads the JS files from the `js/` directory automatically.
+## Why it doesn't hallucinate anymore
 
-```
-open index.html          # macOS
-start index.html         # Windows
-```
+v1 implemented the MongoDB rules three times (once per tab), mixed with hard-coded SVG coordinates, and was
+validated by clicking. v2 splits the problem:
 
-### Option B — Single file (sharing / presenting)
+| Layer | File | Guarantee |
+|---|---|---|
+| Rules | `src/rules.js` → `RULES.md` | Each behavior is one documented rule with a verbatim quote and URL |
+| Engine | `src/engine.js` | Pure function: model in, outcome + rule IDs out. No DOM, no language |
+| Layout | `src/layout.js` | Pure geometry: canvas size comes from content; arrows are routed through lanes kept free of nodes and text |
+| UI | `src/canvas.js`, `src/panel.js`, `src/main.js`, `src/i18n.js` | Renders what the engine and layout return |
 
-Run the build script once to bundle everything:
+Tests (`npm test`, ~30 s):
 
-```bash
-./build.sh
-```
+- `test/engine.test.mjs`: the scenarios the docs spell out (2+1, 3+2, 1-1-1, 2-2-1, fault-tolerance table,
+  partition behavior…) plus invariants checked on **every topology within limits × every node-failure combination**
+  (over 100k evaluations), and mutation-checked (deliberately broken engines fail the suite).
+- `test/layout.test.mjs`: for every allowed topology, nodes fit, nothing overlaps, every arrow ends exactly on its
+  node and crosses no other node, pill or header text.
+- `test/i18n.test.mjs`: EN and PT-BR have the same keys; every engine code has a label.
+- `test/e2e.py` (`npm run e2e`, needs Python Playwright): headless Chromium on the built file. All scenarios in
+  both languages and both themes, plus 400 random clicks, checking real rendered text widths, arrow endpoints,
+  DOM roles vs engine roles, JS errors and horizontal scroll at phone width.
 
-Then open the output file:
-
-```
-open dist/mongodb-cap-visualizer.html
-```
-
-Share `dist/mongodb-cap-visualizer.html` as a standalone file — it has no external dependencies.
-
----
-
-## The Three Tabs
-
-### ① Replica Set & Failover
-
-Simulates a 3, 5, or 7-node Atlas replica set across cloud regions.
-
-- **Click any node** to toggle it between Healthy and Down.
-- **Trigger Election** simulates a primary failover when the current primary is down.
-- **Change Cloud Provider / Region** per node to explore cross-region topologies.
-- **Write Concern / Read Preference** selectors show how the quorum requirement changes.
-- The panel on the right shows quorum status, write acknowledgment path, and whether the set can elect a new primary.
-
-### ② Write / Read Concerns
-
-Illustrates the full lifecycle of a write operation: client → primary → secondaries → acknowledgment → read.
-
-- **Write Concern** (`w:0`, `w:1`, `w:majority`, `w:all`) controls how many nodes must confirm a write before the client receives an ACK.
-- **Journal** (`j:true/false`) controls whether the write must be flushed to disk before acknowledgment.
-- **Read Preference** (`primary`, `primaryPreferred`, `secondary`, etc.) controls which node serves reads.
-- **Read Concern** (`local`, `majority`, `linearizable`, `snapshot`, `available`) controls the consistency guarantee on reads.
-- The SVG diagram animates the WRITE → ACK → READ arrows so you can see exactly where each operation lands.
-- Use **Simulate Write** and **Simulate Read** to step through the flow in the activity log.
-
-### ③ Multi-Region Active-Active
-
-Shows a Global Cluster with zone-sharded collections across 2 or 3 cloud regions.
-
-- **Configuration** selector switches between `3-region / 3-shard`, `3-region / 1-shard`, and `2-region / 2-shard` topologies.
-- **Kill Region** and **Revive Region** simulate a regional outage and recovery.
-- Each region panel shows the local replica set (primary + secondaries), the mongos router, and the config server replica set (CSRS).
-- Shard status badges (`PRIMARY`, `READ-ONLY`, `DOWN`) update in real time.
-- The **HA/DR Guidance** panel explains the architectural trade-offs for the selected configuration.
-
----
-
-## CAP Theorem Panel
-
-Click **⬡ CAP Positioning** (top-right) to open the live CAP panel.
-
-The panel updates automatically as you change settings across any tab. It shows:
-
-- **Triangle position** — where the current configuration sits between Consistency (CP) and Availability (AP).
-- **Mode badge** — `CP`, `AP`, or `Balanced (PA/EC)`.
-- **Metric bars** — qualitative ratings for Consistency, Availability, Durability, and Write Latency.
-- **Narrative** — a plain-English explanation of the current trade-off.
-- **Active Settings table** — the exact writeConcern, readPreference, readConcern, and node count driving the score.
-
----
-
-## File Structure
-
-```
-DataResilienceVisualizer/
-├── index.html                      # HTML + CSS shell (loads js/ modules)
-├── js/
-│   ├── state.js                    # Global state object S, constants, config tables
-│   ├── utils.js                    # $(), log(), clamp(), mdbNodeIcon()
-│   ├── cap.js                      # getCAPScores(), updateCAP()
-│   ├── tab-rs.js                   # Tab 1 — Replica Set & Failover
-│   ├── tab-wc.js                   # Tab 2 — Write / Read Concerns
-│   ├── tab-mr.js                   # Tab 3 — Multi-Region Active-Active
-│   └── main.js                     # toggleCAPPanel(), switchTab(), window.onload
-├── build.sh                        # Bundles js/ into a single-file distributable
-├── dist/
-│   └── mongodb-cap-visualizer.html # Single-file output of build.sh
-├── mongodb-cap-visualizer.html     # Original monolithic version (reference)
-└── SPEC.md                         # Full feature specification
-```
-
-Script load order (important for globals): `state → utils → cap → tab-rs → tab-wc → tab-mr → main`
-
----
-
-## Rebuilding After Changes
-
-Any time you edit a file in `js/` or `index.html`, regenerate the distributable:
+## Develop
 
 ```bash
-./build.sh
+npm install          # esbuild only
+npm test             # engine, layout, i18n
+npm run build        # → dist/data-resilience-visualizer.html (+ dist/artifact.html for hosted publishing)
+npm run e2e          # browser checks on the build
+npm run rules        # regenerate RULES.md from src/rules.js
 ```
 
-The output overwrites `dist/mongodb-cap-visualizer.html`.
+Adding behavior: add the rule (with quote and URL) to `src/rules.js`, implement it in `src/engine.js` tagging the
+rule ID, add a doc-example test named after the rule, then add strings to both languages in `src/i18n.js`.
 
----
+## Scope
 
-## Atlas Version
+Modeled: replica set elections, priorities by region order, node / region / full-cluster loss, partitions with
+the transient old-primary window, read-only nodes, w:0/1/n/"majority", j, all read preferences and read concerns,
+retryable-write behavior, Atlas 3/5/7 electable rule.
 
-Targets **MongoDB Atlas 8.3**. Features specific to self-managed deployments (arbiters, hidden nodes, delayed secondaries) are intentionally excluded — they are not available in Atlas.
+Not modeled yet: sharded / Global Clusters (zones), analytics nodes, tag sets, maxStalenessSeconds, replication
+lag, wtimeout values. The previous version, including the Global Cluster tab, is kept in `legacy/`.
