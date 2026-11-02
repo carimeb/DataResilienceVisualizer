@@ -62,13 +62,16 @@ Illustrates the full lifecycle of a write operation: client → primary → seco
 
 ### ③ Multi-Region Active-Active
 
-Shows a Global Cluster with zone-sharded collections across 2 or 3 cloud regions.
+Shows independent shard replica sets across two or three regions. Rows stay assigned to the same shard and columns to the same region, so members keep their positions during failures and recovery.
 
-- **Configuration** selector switches between `3-region / 3-shard`, `3-region / 1-shard`, and `2-region / 2-shard` topologies.
-- **Kill Region** and **Revive Region** simulate a regional outage and recovery.
-- Each region panel shows the local replica set (primary + secondaries), the mongos router, and the config server replica set (CSRS).
-- Shard status badges (`PRIMARY`, `READ-ONLY`, `DOWN`) update in real time.
-- The **HA/DR Guidance** panel explains the architectural trade-offs for the selected configuration.
+- **Configuration** selects three regions with **three shards and three backends**, three regions with **the same three shards and one backend**, or two regions with **two shards and two backends**. Every shard has three voting members.
+- **Dashed arrows** show oplog replication from the current primary to its secondaries. Amber connections indicate an election; gray connections with a break mark indicate an offline member. Shard colors and member IDs remain visible throughout.
+- **Per-shard status** distinguishes `WRITES READY`, `ELECTING PRIMARY`, `NO MAJORITY`, and `UNAVAILABLE`, with the number of online members and the required quorum. Without a primary, secondary reads depend on read preference and read concern.
+- **Fail region**, **Restore**, and individual node clicks let you combine outages and recoveries, including during elections. **Restore All** returns the selected configuration to its initial healthy topology and cancels pending elections.
+- **Backend → mongos** route summaries follow the current primary even when it moves to another region. A regional outage also takes its regional backend offline; the single external backend in the one-backend pattern is outside the simulated regional failures.
+- Restored members rejoin as secondaries while a healthy primary remains in place. When majority returns to a shard without a primary, a new election runs. The model treats restored members as caught up; synchronization time, priority-based failback, replication chaining, and config server availability are not simulated.
+
+See [SPEC.md §6](SPEC.md#6-tab-3--multi-region-global-cluster) for state rules and links to the MongoDB documentation.
 
 ---
 
@@ -119,6 +122,14 @@ Any time you edit a file in `js/` or `index.html`, regenerate the distributable:
 ```
 
 The output overwrites `dist/mongodb-cap-visualizer.html`.
+
+Run the automated regression tests before publishing:
+
+```bash
+node --test tests/*.test.js
+```
+
+The multi-region tests cover quorum, overlapping failures, election cancellation, recovery, and stable diagram positions.
 
 ---
 

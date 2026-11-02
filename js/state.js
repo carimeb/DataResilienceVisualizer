@@ -13,7 +13,9 @@ const S = {
     config: '3r3b',
     nodeHealth: [],            // [si][ri][ni] = bool — filled in window.onload
     primaryRegion: [0, 1, 2], // which region holds each shard's primary (-1 = none)
+    primaryNode: [0, 0, 0],   // member index within that region (-1 = none)
     shardElecting: [],         // [si] = bool — true while election in progress
+    regionDown: [],            // explicit region outages also take its backend offline
   },
 };
 
@@ -45,7 +47,7 @@ const MR_SC = [
 const MR_CFGS = {
   '3r3b': {
     label: '3 Regions · 3 Backends',
-    desc: 'Each region runs its own Backend connected to its local MongoDB Primary via VPC Peering or Private Endpoint. Writes stay local — zero cross-region latency for owned data. Any single region failure leaves all shards at 2/3 nodes → majority intact → writes continue everywhere.',
+    desc: 'Each region has a backend. Through mongos, writes reach the current primary of the target shard. One region can fail while each shard retains 2 of 3 members; affected shards resume writes after an election.',
     regions: [
       { name: 'AWS Oregon',   short: 'us-west-2' },
       { name: 'AWS Ohio',     short: 'us-east-2' },
@@ -57,7 +59,7 @@ const MR_CFGS = {
   },
   '3r1b': {
     label: '3 Regions · 1 Backend',
-    desc: 'A single Backend serves all zones via cross-region Private Endpoint. After failover the backend must write cross-region to shards whose Primary is now in another region — latency increases, but data stays safe. Oplog replication across all 3 regions keeps shard majority intact.',
+    desc: 'One backend, shown outside the regional failure simulation, uses mongos to reach all three shards. Each shard has one member in each region. A primary can move to a surviving region after failover.',
     regions: [
       { name: 'AWS Oregon',   short: 'us-west-2' },
       { name: 'AWS Ohio',     short: 'us-east-2' },
@@ -69,7 +71,7 @@ const MR_CFGS = {
   },
   '2r2b': {
     label: '2 Regions · 2 Backends',
-    desc: '<strong>2+1 node distribution per shard.</strong> Home region holds 2 nodes; DR holds 1. Simulate killing a region to observe the quorum behavior. See the architecture guidance above for recommended mitigation paths.',
+    desc: '<strong>2+1 members per shard.</strong> Losing the region with two members removes that shard’s majority. The other shard can retain its majority. Compare their separate status labels.',
     regions: [
       { name: 'AWS Ohio',    short: 'us-east-2' },
       { name: 'AWS Virginia', short: 'us-east-1' },

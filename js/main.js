@@ -35,8 +35,7 @@ window.onload = function () {
   wcRender();
   wcUpdate();
 
-  S.mr.nodeHealth    = mrInitNodeHealth(MR_CFGS[S.mr.config]);
-  S.mr.shardElecting = Array(MR_CFGS[S.mr.config].numShards).fill(false);
+  mrInitialize();
   mrRender();
   mrUpdateInfo();
 

@@ -64,8 +64,10 @@ const S = {
   mr: {
     config: '3r3b',             // active MR_CFGS key
     nodeHealth: [],             // [si][ri][ni] = bool
-    primaryRegion: [0, 1, 2],  // runtime primary region index per shard (-1 = none)
-    shardElecting: [],          // [si] = bool — guards re-entrant elections
+    primaryRegion: [0, 1, 2],   // runtime primary region per shard (-1 = none)
+    primaryNode: [0, 0, 0],     // primary member index within that region (-1 = none)
+    shardElecting: [],          // [si] = bool — election in progress
+    regionDown: [],             // explicit regional outage also takes its backend offline
   }
 };
 ```
@@ -236,190 +238,126 @@ When `readPreference` targets a secondary, `sameTarget === false` and original c
 
 ## 6. Tab 3 — Multi-Region Global Cluster
 
-### 6.1 Purpose
-Demonstrates MongoDB Atlas Global Clusters with zone sharding. Each region has a dedicated shard whose primary is pinned to that region. Users kill individual nodes or entire regions and observe per-shard quorum behavior.
+### 6.1 Purpose and Model
 
-### 6.2 Zone Sharding Concept
+Demonstrates independent replica sets in a zone-sharded cluster. Every shard has three voting members spread across two or three regions. Users fail individual members or entire regions and observe each shard's primary, quorum, replication connections, and write availability.
 
-- Each "Backend" maps to a shard zone. Data for a region is pinned to its zone via range-based shard keys.
-- Every shard is an independent 3-node replica set.
-- The shard's PRIMARY is in its "home region" under normal operation.
-- Cross-region replication is via oplog, not synchronous writes.
-- Each Backend writes to its local Primary → true Active-Active with intra-region latency.
+A shard's zone identifies the data assigned to that shard; it does not pin the runtime primary to one region. Applications access shards through `mongos`. The initial primary regions are configured in `MR_CFGS`; failover may move a primary to another region.
 
-**Oplog lines:** Cross-node replication arrows are intentionally hidden in this tab. The diagram only renders Backend→Primary connection arrows. This keeps the visual focused on availability semantics rather than replication topology.
+### 6.2 Deployment Patterns (`MR_CFGS`)
 
-### 6.3 Cluster Configurations (`MR_CFGS`)
+**`3r3b` — 3 Regions · 3 Backends**
 
-**`3r3b` — 3 Regions · 3 Backends (recommended)**
-
-| | us-west-2 | us-east-2 | us-east-1 |
+| | AWS Oregon (`us-west-2`) | AWS Ohio (`us-east-2`) | AWS Virginia (`us-east-1`) |
 |---|---|---|---|
-| Shard 0 | 1 node | 1 node | 1 node |
-| Shard 1 | 1 node | 1 node | 1 node |
-| Shard 2 | 1 node | 1 node | 1 node |
+| Shard 1 | 1 member, initial primary | 1 member | 1 member |
+| Shard 2 | 1 member | 1 member, initial primary | 1 member |
+| Shard 3 | 1 member | 1 member | 1 member, initial primary |
 
-- 3 shards, 3 nodes each, 1 per region
-- Any single region can fail: surviving 2 nodes = majority → writes continue automatically
-- Home PRIMARY regions: Shard 0 → us-west-2, Shard 1 → us-east-2, Shard 2 → us-east-1
+Each region has a backend. Losing one region leaves two of three members in every shard, enough to elect a primary. Shards that lose their primary pause writes during an election; a failed region's backend remains offline until restored.
 
 **`3r1b` — 3 Regions · 1 Backend**
 
-Same 3-region topology, single shard. Suitable when data does not require regional partitioning.
+Uses the same three shards and nine members as `3r3b`. One application backend accesses all shards through `mongos`. This backend is shown outside the regional failure model, so region controls do not fail it.
 
-**`2r2b` — 2 Regions · 2 Backends ⚠ (not recommended)**
+**`2r2b` — 2 Regions · 2 Backends**
 
-| | us-east-2 | us-east-1 |
+| | AWS Ohio (`us-east-2`) | AWS Virginia (`us-east-1`) |
 |---|---|---|
-| Shard 0 | 2 nodes | 1 node |
-| Shard 1 | 1 node | 2 nodes |
+| Shard 1 | 2 members, including initial primary | 1 member |
+| Shard 2 | 1 member | 2 members, including initial primary |
 
-- Home region holds 2 of 3 nodes per shard
-- If home region fails: 1/3 votes survive → below majority → **READ-ONLY automatically**
-- This is deterministic; no concern setting changes it within 2 regions
-- See §6.9 for recommended mitigation paths
+A failure of the region with two members removes that shard's majority. The other shard retains two members and can remain writable or elect a primary. The configuration banner explains that spreading three voting members across three regions lets a shard retain two votes after any single simulated regional outage.
 
-### 6.4 Shard Status (three states)
+### 6.3 State and Quorum
+
+`S.mr.nodeHealth[si][ri][ni]` records whether a member is online. The primary is identified by both `primaryRegion[si]` and `primaryNode[si]`, so restoring a lower-index member cannot silently change the primary's identity. Both values are `-1` when there is no primary.
+
+`mrShardStatus(si)` derives:
 
 ```javascript
-function mrShardStatus(si) {
-  // Returns: { total, majority, healthyNodes, readOnly, down }
-  // readOnly: healthyNodes > 0 && healthyNodes < majority
-  // down:     healthyNodes === 0
+{
+  total, majority, healthyNodes, hasMajority,
+  electing,
+  primary,     // { si, ri, ni } or null
+  down,        // no members online
+  readOnly,    // legacy CAP field: some members online, but no majority
+  writable     // majority plus a healthy primary, with no election in progress
 }
 ```
 
-The three visual states of a shard:
+`majority = floor(total / 2) + 1`. The UI deliberately does not label the legacy `readOnly` condition as guaranteed read availability.
 
-| State | Condition | Visual indicator |
+| Shard label | Condition | Meaning |
 |---|---|---|
-| `✓ Writable` | majority satisfied AND primary exists | Green badge |
-| `⚠ READ-ONLY` | some nodes up, but < majority | Blue banner |
-| `⊘ Unavailable` | 0 nodes up | Red badge |
+| `WRITES READY` | Majority and healthy primary | The shard can accept writes in this model. |
+| `ELECTING PRIMARY` | Majority, election in progress | Writes pause while a primary is selected. |
+| `NO MAJORITY` | Some members online, fewer than the majority | No primary and no writes. Secondary reads depend on read preference and read concern. |
+| `UNAVAILABLE` | Zero members online | No member can serve operations. |
 
-### 6.4a Backend→Primary Arrow Helpers
+Every row shows the online count and required quorum. `#mr-status-summary` counts shards ready for writes, while `#mr-status-detail` lists unavailable shards, shards without majority, and concurrent elections. These messages are derived from all shards together and announced through an accessible live region.
 
-**`mrArrow(ax1, ay1, ax2, ay2, si, curved)`**
+### 6.4 Fixed Diagram Layout
 
-Draws a dashed arrow from a backend to a primary node. Appearance is driven by `mrShardStatus(si)`:
+`mrLayout()` places each shard in a permanent horizontal row and each region in a permanent column. Members are ordered by configuration, never by current role. In the two-region pattern, two members share a cell side by side. A member keeps its coordinates throughout failover and recovery.
 
-- **WRITES** (orange `#FF9900`) — shard is writable (majority intact)
-- **READ-ONLY** (blue `#3B82F6`) — shard is below majority but has surviving nodes
-- **No line drawn** — shard is fully DOWN (`st.down === true`)
+Each member has a visible `S1 · N1` style identifier and a stable `data-node="si-ri-ni"` identifier. Region headers show the number of online database members, or `REGION OFFLINE` for an explicit regional outage. Dashed region boundaries remain visible during outages.
 
-Straight lines are used for regional backends (`curved=false`); bezier curves are used for the 3r1b external backend (`curved=true`). Labels are rendered as small pill badges mid-arrow.
+Member labels distinguish `PRIMARY`, `SECONDARY`, `ELECTING`, and `OFFLINE`. Primaries have a static ring and prominent role badge; offline members have a red cross. Text and shapes supplement the shard colors, so role and availability are not conveyed by color alone. Nodes can be toggled with a click, Enter, or Space; focus is retained after rerendering.
 
-**`mrBestTarget(si, preferRi)`**
+### 6.5 Replication Connections and Application Routes
 
-Finds the best node to draw an arrow to for shard `si`. Used only for `3r1b` (single backend). Search order:
-1. PRIMARY in `preferRi` (if provided)
-2. PRIMARY in any other region
-3. Any healthy secondary in any region (fallback for READ-ONLY display)
+`mrReplicationLinks(si, nodes, status)` draws connections only between members of the same shard:
 
-Returns `null` if the shard is fully down (no line drawn).
+- With a primary, colored dashed arrows run from that primary to the secondaries. A longer connection arcs around any intervening member to avoid implying that replication passes through it.
+- An offline endpoint produces a gray dashed connection with a break mark and no arrowhead. Its tooltip explains that a member is offline.
+- Without a primary, member pairs remain visible. Connections between online members are amber while an election is in progress; they have no replication arrowhead.
+- Each SVG path records its shard, source, target, and `replicating`, `offline`, or `waiting` state for inspection and regression tests.
 
-### 6.4b Backend Rendering Rules (per config)
+The legend explains active replication, election connections, and unavailable connections. Node positions and shard colors remain stable as these connection states change.
 
-**`3r3b` and `2r2b` — Local-only rule:**
+Application routing is summarized above the replica sets rather than drawn across the replication rows. For regional backends, `Backend → mongos` displays the associated shard's current primary region, `writes paused`, or `Backend offline`. The route follows the elected primary across regions. The single-backend pattern states that `mongos` routes to the current primary of each shard.
 
-Each regional backend only connects to its home shard's PRIMARY **in the same region column**. No fallback to secondaries or other regions. If the local PRIMARY does not exist (region down or mid-election), no line is drawn for that backend.
+### 6.6 Election and Recovery Rules
 
-```javascript
-const homeSi = cfg.primaryRegion.indexOf(ri);     // which shard "belongs to" this region
-const localPri = nodePos[ri].find(
-  n => n.si === homeSi && n.role === 'PRIMARY' && S.mr.nodeHealth[n.si][n.ri][n.ni]
-);
-if (localPri) mrArrow(cx, backY+backH, cx, localPri.y - ns*0.57, homeSi, false);
-```
+Every node or region change runs `mrReconcileShard(si)` for the affected shards:
 
-**`3r1b` — External backend + shard loop:**
+1. If a shard has no majority, cancel its pending election and clear its primary.
+2. If a healthy primary and majority remain, preserve the primary.
+3. If majority exists but there is no primary or election, start an election.
 
-The single backend box is rendered **outside and above** the region cards (`topOffset = 90px`), labeled "Application Backend (via mongos)". This communicates that the driver routes through a `mongos` to reach each shard's primary — rather than being co-located in one region.
+`mrStartElection(si)` clears the primary and schedules a simulated election with `MR_ELECTION_MS = 3000`. This delay is for visualization; it is not a prediction of real MongoDB election timing. The UI shows the election state without a countdown.
 
-Arrows loop by shard (not by region). A spread offset prevents overlap when two shards share the same column after a failover election:
+`mrElectionTimers` stores a timer and a unique pending object per shard. Cancellation clears the timeout and removes that object; the callback also verifies object identity. Reset or reconfiguration therefore prevents old callbacks from changing a new simulation. Shards can elect independently, and further failures or restores remain available during an election.
 
-```javascript
-// spread multiple arrows that target the same x-column
-const colCount = {}, colIdx = {};
-for (let si = 0; si < numS; si++) {
-  const t = mrBestTarget(si, null);
-  if (t) colCount[t.x] = (colCount[t.x] || 0) + 1;
-}
-for (let si = 0; si < numS; si++) {
-  const t = mrBestTarget(si, null); if (!t) continue;
-  const total = colCount[t.x] || 1, idx = colIdx[t.x] || 0; colIdx[t.x] = idx + 1;
-  const spread = total > 1 ? (idx - (total-1)/2) * 16 : 0;
-  mrArrow(srcX, srcY, t.x + spread, t.y - ns*0.57, si, true);
-}
-```
+`mrCompleteElection(si)` rechecks majority before choosing a healthy candidate. The deterministic selection first checks the configured initial primary region, then other regions. This selection order is a simulator rule, not a simulation of MongoDB member priorities or election timing.
 
-### 6.5 Election Flow (per shard)
+On recovery, a member joins the current replica set without displacing a healthy primary. If its return restores majority to a shard with no primary, an election starts. The simulator does not perform automatic failback to the original primary or region.
 
-**Trigger:** `mrToggleNode(si, ri, ni)` — node killed, AND that node was the PRIMARY for shard `si`.
+### 6.7 Failure Controls and Reset
 
-**Guard:** `S.mr.shardElecting[si] === true` → all clicks for that shard are ignored until election completes.
+- **Fail region** sets every member in that region offline and records an explicit regional outage in `S.mr.regionDown`, which also marks the regional backend offline.
+- **Restore** is available whenever a region has offline members. It restores all members in the region, clears the regional outage, and reconciles all affected shards.
+- **Individual node interaction** toggles that member even during an election. Restoring a member in a region clears the region-outage flag, allowing partial recovery to be represented.
+- **Restore All** calls `mrInitialize()` for the selected configuration: cancels all pending elections, restores all members, and reinstates the initial primary identities. It does not change the selected deployment pattern.
+- **Configuration change** initializes the newly selected pattern with the same cancellation guarantees.
 
-```
-mrStartElection(si):
-  S.mr.shardElecting[si] = true
-  mrShowElexBanner(si)         ← amber banner with countdown
-  S.mr.primaryRegion[si] = -1 ← no primary during election
-  all healthy nodes in shard si → rendered with amber VOTING pill + pulsing ring
-  countdown ~8s via setInterval
-  → mrCompleteElection(si):
-      S.mr.shardElecting[si] = false
-      pick new primary: home region preferred (cfg.primaryRegion[si])
-      → if no healthy node in home region, pick from any other region
-      → if no healthy nodes at all, shard stays DOWN
-      mrHideElexBanner()
-      mrUpdateBanners()
-      mrRender()
-```
+### 6.8 Educational Simplifications and Boundaries
 
-**Home-region invariant:** `cfg.primaryRegion[si]` is the permanent zone home (config-level). `S.mr.primaryRegion[si]` is the runtime elected location. After election, if the home region has a healthy node, the primary returns there. This prevents the corner case of all primaries migrating to one region over time.
+- Restored members are treated as caught up immediately. Synchronization time, replication lag, rollback, and initial sync are not simulated.
+- All modeled members vote and can become primary. Member priorities, priority-based failback, and detailed election protocol timing are not simulated.
+- Arrows show direct primary-to-secondary oplog replication. Replication chaining and sync-source selection are not simulated.
+- `mongos` routing is summarized. Config server replica set availability, router failures, application retries, and backend failover are not simulated; the one-backend pattern's backend is outside the region failure controls.
+- The model tracks availability rather than individual writes or acknowledgments. It makes no blanket promise of zero data loss or guaranteed secondary reads during an outage.
 
-### 6.6 Banner States (Tab 3)
+### 6.9 Official MongoDB References
 
-| Banner | Trigger |
-|---|---|
-| `#mr-elex-banner` | At least one shard is electing. Shows shard name + countdown. |
-| `#mr-ro-banner` | At least one shard is in READ-ONLY state (below majority, not electing). |
-| `#mr-2r-banner` | Config `2r2b` is selected (architecture guidance — always visible with that config). |
-
-Banners can coexist: `#mr-2r-banner` is a persistent architecture warning, while `#mr-elex-banner` and `#mr-ro-banner` are reactive to simulation state.
-
-### 6.7 Node Visual States
-
-| State | Circle fill | Pill label | Animation |
-|---|---|---|---|
-| PRIMARY, healthy | `#00684A` (green) | PRIMARY | Glow pulse ring |
-| SECONDARY, healthy | `#334E68` (slate) | SECONDARY | None |
-| VOTING (mid-election) | `#FCD34D` (amber) | VOTING… | Pulsing amber ring |
-| DOWN | `#C0392B` (red) with × | DOWN | None |
-
-Shard colors (used for region boxes and node accents):
-- Shard 0: Green (`#00ED64` / `#00684A`)
-- Shard 1: Blue (`#60A5FA` / `#1D4ED8`)
-- Shard 2: Pink/Rose (`#FB7185` / `#BE185D`)
-
-### 6.8 Failure Simulation Controls
-
-- **Kill [region]** buttons — set all nodes in a region to DOWN across all shards. Triggers elections for any shard that loses its primary.
-- **Revive [region]** button — appears once all nodes in a region are DOWN; restores all nodes to HEALTHY.
-- **↺ Restore All** — `mrReset()`: restores all nodes, resets all elections and banners.
-- **Individual node click** — `mrToggleNode(si, ri, ni)`: toggle one node. Ignored if that shard is mid-election.
-
-### 6.9 2-Region Architecture Guidance
-
-When `2r2b` is selected, a persistent amber banner appears explaining the quorum limitation:
-
-> **⚠ 2-Region topology — quorum limitation**  
-> Each shard distributes as 2 nodes in the home region + 1 in the DR region. If the home region fails, only 1 of 3 votes survive — below majority — and the shard enters READ-ONLY automatically.  
-> ✦ MongoDB recommendation: always deploy across **3 or more regions** to ensure each shard can maintain quorum after any single region failure.
-
-No specific mitigation paths (Atlas Tiebreaker, arbiters, etc.) are shown. This is intentional:
-
-> **Atlas constraint:** MongoDB Atlas does NOT expose arbiter, hidden node, or delayed secondary configuration. These are self-managed deployment concepts only. The topology is managed automatically by Atlas infrastructure. When discussing 2-region deployments on Atlas, the correct recommendation is to upgrade to 3 regions — not to configure an arbiter or tiebreaker manually.
+- [Replica Set Elections](https://www.mongodb.com/docs/manual/core/replica-set-elections/): majority votes, primary stepdown, member priorities, and retry limitations.
+- [Replica Set Primary](https://www.mongodb.com/docs/manual/core/replica-set-primary/): writes go to the primary; secondaries replicate the oplog.
+- [Rollbacks During Replica Set Failover](https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/): a former primary rejoins as a secondary; durability depends on acknowledgment and failure conditions.
+- [Read Preference](https://www.mongodb.com/docs/manual/core/read-preference/): primary-only reads require a primary; secondary selection depends on the chosen mode and eligibility.
+- [Read Concern majority](https://www.mongodb.com/docs/manual/reference/read-concern-majority/): reads use the majority-committed view.
+- [Routing with mongos](https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/): applications access shards through routers.
 
 ---
 
