@@ -45,6 +45,7 @@ Simulates a 3, 5, or 7-node Atlas replica set across cloud regions.
 - **Trigger Election** simulates a primary failover when the current primary is down.
 - **Change Cloud Provider / Region** per node to explore cross-region topologies.
 - **Write Concern / Read Preference** selectors show how the quorum requirement changes.
+- **Reset** restores three healthy AWS nodes in one region, plus the initial concern settings, even during an election.
 - The panel on the right shows quorum status, write acknowledgment path, and whether the set can elect a new primary.
 
 ### ② Write / Read Concerns
@@ -55,6 +56,7 @@ Illustrates the full lifecycle of a write operation: client → primary → seco
 - **Journal** (`j:true/false`) controls whether the write must be flushed to disk before acknowledgment.
 - **Read Preference** (`primary`, `primaryPreferred`, `secondary`, etc.) controls which node serves reads.
 - **Read Concern** (`local`, `majority`, `linearizable`, `snapshot`, `available`) controls the consistency guarantee on reads.
+- **Reset** restores the educational resilience baseline: `w:"majority"`, `j:true`, `readConcern:"majority"`, `readPreference:"primary"`. MongoDB's general default read concern is `local`; the visualizer uses `majority` here to illustrate reads of majority-acknowledged writes.
 - The SVG diagram animates the WRITE → ACK → READ arrows so you can see exactly where each operation lands.
 - Use **Simulate Write** and **Simulate Read** to step through the flow in the activity log.
 

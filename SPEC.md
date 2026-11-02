@@ -88,6 +88,7 @@ Demonstrates the MongoDB election protocol. Users click nodes to kill/revive the
 | Read Preference | primary / primaryPreferred / secondary / secondaryPreferred / nearest | primary |
 
 Changing any control calls `rsReconfigure()`, which resets election state, rebuilds nodes, and re-renders.
+The **Reset** button restores the complete initial topology and settings: three healthy AWS nodes in one region, `w:"majority"`, and `readPreference:"primary"`. It also cancels an election in progress.
 
 ### 4.3 Node Model
 
@@ -171,6 +172,8 @@ Banners are mutually exclusive. The election banner has a large countdown timer 
 An interactive reference for MongoDB's durability and data freshness controls. Every combination moves a dot on the CAP triangle in the side panel.
 
 ### 5.2 Controls
+
+The initial configuration and **Reset** use an educational resilience baseline: `w:"majority"`, `j:true`, `readConcern:"majority"`, and `readPreference:"primary"`. MongoDB's general default read concern is `local`; `majority` is selected here for the [documented combination to read majority-acknowledged writes on the primary](https://www.mongodb.com/docs/manual/reference/write-concern/#read-and-write-concern-recommendations). See also the [read concern](https://www.mongodb.com/docs/manual/reference/read-concern/) and [read preference](https://www.mongodb.com/docs/manual/core/read-preference/) references. Reset cancels pending write/read simulation steps.
 
 **Write Concern (`w`)**
 

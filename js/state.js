@@ -7,7 +7,8 @@ const S = {
     electing: false,
     electionInterval: null,
   },
-  wc: { w: 'wmaj', j: true, rc: 'majority', rp: 'primary' },
+  // Educational resilience baseline; the server's general readConcern default is local.
+  wc: { w: 'wmaj', j: true, rc: 'majority', rp: 'primary', writeRun: 0, readRun: 0 },
   mr: {
     config: '3r3b',
     nodeHealth: [],            // [si][ri][ni] = bool — filled in window.onload

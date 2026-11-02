@@ -388,13 +388,18 @@ function rsCompleteElection() {
 
 function rsReset() {
   clearInterval(S.rs.electionInterval);
+  S.rs.electionInterval = null;
   S.rs.electing = false;
   $('elex-banner').classList.remove('show');
   rsShowBanner('none');
+  $('rs-size').value = '3';
+  $('rs-dist').value = '1';
   const wc = $('rs-wc'); if (wc) wc.value = 'wmaj';
   const rp = $('rs-rp'); if (rp) rp.value = 'primary';
+  rsRenderProviderSelectors();
+  for (let i = 0; i < 3; i++) $('rs-nprov-rs' + i).value = 'aws';
   S.rs.nodes = rsBuildNodes();
-  log('SUCCESS', 'RS', 'Replica set reset to healthy state · writeConcern: w:"majority" · readPreference: primary');
+  log('SUCCESS', 'RS', 'Reset to 3 healthy AWS nodes in one region · writeConcern: w:"majority" · readPreference: primary');
   rsRender(); updateCAP();
 }
 

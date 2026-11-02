@@ -80,6 +80,7 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
 .btn-w{background:#fff;border:1.5px solid var(--warn);color:var(--warn)}.btn-w:hover{background:var(--warn-bg)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn-reset{padding:4px 8px;font-size:10px;letter-spacing:0;text-transform:none;white-space:nowrap}
 button:disabled{opacity:.4;cursor:not-allowed}
 
 /* BADGES */
@@ -208,7 +209,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         </div>
         <div>
           <div class="card">
-            <div class="card-title">RS Configuration</div>
+            <div class="card-title">RS Configuration <button type="button" class="btn btn-g btn-reset" onclick="rsReset()" title="Restore 3 healthy AWS nodes in one region and the initial concern settings" aria-label="Reset replica set to initial configuration">↺ Reset</button></div>
             <label class="fld"><span class="lbl">Number of Nodes</span>
               <select id="rs-size" onchange="rsReconfigure()">
                 <option value="3" selected>3 nodes (minimum)</option>
@@ -245,9 +246,6 @@ button:disabled{opacity:.4;cursor:not-allowed}
                 <option value="nearest">nearest</option>
               </select>
             </label>
-            <div class="btn-row">
-              <button class="btn btn-g" onclick="rsReset()">↺ Reset All</button>
-            </div>
           </div>
         </div>
       </div>
@@ -268,7 +266,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         <!-- RIGHT: Controls -->
         <div>
           <div class="card">
-            <div class="card-title">Write Concern</div>
+            <div class="card-title">Write Concern <button type="button" class="btn btn-g btn-reset" onclick="wcReset()" title="Restore w: majority, j: true, readConcern: majority, readPreference: primary" aria-label="Reset read and write concerns to resilience baseline">↺ Reset</button></div>
             <label class="fld"><span class="lbl">w (acknowledgment)</span>
               <select id="wc-w" onchange="wcUpdate()">
                 <option value="w0">w: 0 — Unacknowledged</option>
@@ -290,9 +288,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
             <div class="card-title">Read Settings</div>
             <label class="fld"><span class="lbl">readConcern</span>
               <select id="wc-rc" onchange="wcUpdate()">
-                <option value="local" selected>local (default)</option>
+                <option value="local">local (MongoDB default)</option>
                 <option value="available">available (fastest)</option>
-                <option value="majority">majority</option>
+                <option value="majority" selected>majority</option>
                 <option value="linearizable">linearizable (strongest)</option>
                 <option value="snapshot">snapshot (transactions)</option>
               </select>
@@ -439,11 +437,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
 </div>
 
 
-<script src="js/state.js"></script>
+<script src="js/state.js?v=43bb6b44"></script>
 <script src="js/utils.js"></script>
 <script src="js/cap.js"></script>
-<script src="js/tab-rs.js"></script>
-<script src="js/tab-wc.js"></script>
+<script src="js/tab-rs.js?v=6da04f2a"></script>
+<script src="js/tab-wc.js?v=bfddf36f"></script>
 <script src="js/tab-mr.js"></script>
 <script src="js/main.js"></script>
 </body>

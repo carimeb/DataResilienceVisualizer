@@ -177,28 +177,46 @@ function wcUpdate() {
   log('INFO', 'CONCERNS', `w:${wc} j:${j} readPreference:${rp} readConcern:${rc}`);
 }
 
+function wcReset() {
+  // Invalidate any pending simulation steps before restoring the controls.
+  S.wc.writeRun++;
+  S.wc.readRun++;
+  $('btn-sim-write').disabled = false;
+  $('btn-sim-read').disabled = false;
+  $('wc-w').value = S.wc.w;
+  $('wc-j').value = String(S.wc.j);
+  $('wc-rc').value = S.wc.rc;
+  $('wc-rp').value = S.wc.rp;
+  wcUpdate();
+  log('SUCCESS', 'CONCERNS', 'Reset to resilience baseline · w:"majority" · j:true · readConcern:majority · readPreference:primary');
+}
+
 async function wcSimWrite() {
   const btn = $('btn-sim-write'); btn.disabled = true;
+  const run = ++S.wc.writeRun;
   const wc  = $('wc-w')?.value || 'wmaj';
   const j   = $('wc-j')?.value === 'true';
   const acks = wc === 'w0' ? 0 : wc === 'w1' ? 1 : wc === 'wmaj' ? 2 : 3;
   log('INFO', 'WRITE', 'Driver sending write operation to Primary...');
   await sleep(250);
+  if (run !== S.wc.writeRun) return;
   if (j) { log('INFO', 'WRITE', 'Primary applying write to oplog + journal (disk flush)...'); await sleep(300); }
   else   { log('INFO', 'WRITE', 'Primary applying write to memory buffer (no journal flush)...'); await sleep(150); }
+  if (run !== S.wc.writeRun) return;
   if (acks === 0) {
     log('WARN', 'WRITE', 'w:0 — driver returned immediately. No acknowledgment sent by server.');
   } else {
     log('SUCCESS', 'WRITE', 'Primary applied write → ACK (w:1)');
-    if (acks >= 2) { await sleep(480); log('SUCCESS', 'WRITE', 'Secondary rs1 applied via oplog replication → majority (2/3) reached'); }
-    if (acks === 3){ await sleep(320); log('SUCCESS', 'WRITE', 'Secondary rs2 applied → all nodes confirmed (w:all)'); }
+    if (acks >= 2) { await sleep(480); if (run !== S.wc.writeRun) return; log('SUCCESS', 'WRITE', 'Secondary rs1 applied via oplog replication → majority (2/3) reached'); }
+    if (acks === 3){ await sleep(320); if (run !== S.wc.writeRun) return; log('SUCCESS', 'WRITE', 'Secondary rs2 applied → all nodes confirmed (w:all)'); }
     log('SUCCESS', 'WRITE', `✓ Write committed — ${acks} node${acks > 1 ? 's' : ''} acknowledged. Driver unblocked.`);
   }
-  await sleep(300); btn.disabled = false;
+  await sleep(300); if (run === S.wc.writeRun) btn.disabled = false;
 }
 
 async function wcSimRead() {
   const btn = $('btn-sim-read'); btn.disabled = true;
+  const run = ++S.wc.readRun;
   const rp  = $('wc-rp')?.value || 'primary';
   const rc  = $('wc-rc')?.value || 'majority';
   const targets = {
@@ -210,11 +228,14 @@ async function wcSimRead() {
   };
   log('INFO', 'READ', `Read request → driver resolving target node (readPreference: ${rp})`);
   await sleep(300);
+  if (run !== S.wc.readRun) return;
   log('INFO', 'READ', `Routing to ${targets[rp]}`);
   await sleep(350);
+  if (run !== S.wc.readRun) return;
   if (rc === 'linearizable') {
     log('WARN', 'READ', 'readConcern:linearizable — coordinating with majority to confirm no later writes exist...');
     await sleep(700);
+    if (run !== S.wc.readRun) return;
   }
   const freshness = (rc === 'local' || rc === 'available')
     ? 'local node snapshot (may be slightly stale)'
@@ -222,5 +243,5 @@ async function wcSimRead() {
     : rc === 'linearizable' ? 'linearizable — reflects all prior writes'
     : 'snapshot-consistent (transaction)';
   log('SUCCESS', 'READ', `Document returned. Freshness: ${freshness}`);
-  await sleep(300); btn.disabled = false;
+  await sleep(300); if (run === S.wc.readRun) btn.disabled = false;
 }

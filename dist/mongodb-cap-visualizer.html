@@ -80,6 +80,7 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
 .btn-w{background:#fff;border:1.5px solid var(--warn);color:var(--warn)}.btn-w:hover{background:var(--warn-bg)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn-reset{padding:4px 8px;font-size:10px;letter-spacing:0;text-transform:none;white-space:nowrap}
 button:disabled{opacity:.4;cursor:not-allowed}
 
 /* BADGES */
@@ -208,7 +209,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         </div>
         <div>
           <div class="card">
-            <div class="card-title">RS Configuration</div>
+            <div class="card-title">RS Configuration <button type="button" class="btn btn-g btn-reset" onclick="rsReset()" title="Restore 3 healthy AWS nodes in one region and the initial concern settings" aria-label="Reset replica set to initial configuration">↺ Reset</button></div>
             <label class="fld"><span class="lbl">Number of Nodes</span>
               <select id="rs-size" onchange="rsReconfigure()">
                 <option value="3" selected>3 nodes (minimum)</option>
@@ -245,9 +246,6 @@ button:disabled{opacity:.4;cursor:not-allowed}
                 <option value="nearest">nearest</option>
               </select>
             </label>
-            <div class="btn-row">
-              <button class="btn btn-g" onclick="rsReset()">↺ Reset All</button>
-            </div>
           </div>
         </div>
       </div>
@@ -268,7 +266,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         <!-- RIGHT: Controls -->
         <div>
           <div class="card">
-            <div class="card-title">Write Concern</div>
+            <div class="card-title">Write Concern <button type="button" class="btn btn-g btn-reset" onclick="wcReset()" title="Restore w: majority, j: true, readConcern: majority, readPreference: primary" aria-label="Reset read and write concerns to resilience baseline">↺ Reset</button></div>
             <label class="fld"><span class="lbl">w (acknowledgment)</span>
               <select id="wc-w" onchange="wcUpdate()">
                 <option value="w0">w: 0 — Unacknowledged</option>
@@ -290,9 +288,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
             <div class="card-title">Read Settings</div>
             <label class="fld"><span class="lbl">readConcern</span>
               <select id="wc-rc" onchange="wcUpdate()">
-                <option value="local" selected>local (default)</option>
+                <option value="local">local (MongoDB default)</option>
                 <option value="available">available (fastest)</option>
-                <option value="majority">majority</option>
+                <option value="majority" selected>majority</option>
                 <option value="linearizable">linearizable (strongest)</option>
                 <option value="snapshot">snapshot (transactions)</option>
               </select>
@@ -450,7 +448,8 @@ const S = {
     electing: false,
     electionInterval: null,
   },
-  wc: { w: 'wmaj', j: true, rc: 'majority', rp: 'primary' },
+  // Educational resilience baseline; the server's general readConcern default is local.
+  wc: { w: 'wmaj', j: true, rc: 'majority', rp: 'primary', writeRun: 0, readRun: 0 },
   mr: {
     config: '3r3b',
     nodeHealth: [],            // [si][ri][ni] = bool — filled in window.onload
@@ -1108,13 +1107,18 @@ function rsCompleteElection() {
 
 function rsReset() {
   clearInterval(S.rs.electionInterval);
+  S.rs.electionInterval = null;
   S.rs.electing = false;
   $('elex-banner').classList.remove('show');
   rsShowBanner('none');
+  $('rs-size').value = '3';
+  $('rs-dist').value = '1';
   const wc = $('rs-wc'); if (wc) wc.value = 'wmaj';
   const rp = $('rs-rp'); if (rp) rp.value = 'primary';
+  rsRenderProviderSelectors();
+  for (let i = 0; i < 3; i++) $('rs-nprov-rs' + i).value = 'aws';
   S.rs.nodes = rsBuildNodes();
-  log('SUCCESS', 'RS', 'Replica set reset to healthy state · writeConcern: w:"majority" · readPreference: primary');
+  log('SUCCESS', 'RS', 'Reset to 3 healthy AWS nodes in one region · writeConcern: w:"majority" · readPreference: primary');
   rsRender(); updateCAP();
 }
 
@@ -1300,28 +1304,46 @@ function wcUpdate() {
   log('INFO', 'CONCERNS', `w:${wc} j:${j} readPreference:${rp} readConcern:${rc}`);
 }
 
+function wcReset() {
+  // Invalidate any pending simulation steps before restoring the controls.
+  S.wc.writeRun++;
+  S.wc.readRun++;
+  $('btn-sim-write').disabled = false;
+  $('btn-sim-read').disabled = false;
+  $('wc-w').value = S.wc.w;
+  $('wc-j').value = String(S.wc.j);
+  $('wc-rc').value = S.wc.rc;
+  $('wc-rp').value = S.wc.rp;
+  wcUpdate();
+  log('SUCCESS', 'CONCERNS', 'Reset to resilience baseline · w:"majority" · j:true · readConcern:majority · readPreference:primary');
+}
+
 async function wcSimWrite() {
   const btn = $('btn-sim-write'); btn.disabled = true;
+  const run = ++S.wc.writeRun;
   const wc  = $('wc-w')?.value || 'wmaj';
   const j   = $('wc-j')?.value === 'true';
   const acks = wc === 'w0' ? 0 : wc === 'w1' ? 1 : wc === 'wmaj' ? 2 : 3;
   log('INFO', 'WRITE', 'Driver sending write operation to Primary...');
   await sleep(250);
+  if (run !== S.wc.writeRun) return;
   if (j) { log('INFO', 'WRITE', 'Primary applying write to oplog + journal (disk flush)...'); await sleep(300); }
   else   { log('INFO', 'WRITE', 'Primary applying write to memory buffer (no journal flush)...'); await sleep(150); }
+  if (run !== S.wc.writeRun) return;
   if (acks === 0) {
     log('WARN', 'WRITE', 'w:0 — driver returned immediately. No acknowledgment sent by server.');
   } else {
     log('SUCCESS', 'WRITE', 'Primary applied write → ACK (w:1)');
-    if (acks >= 2) { await sleep(480); log('SUCCESS', 'WRITE', 'Secondary rs1 applied via oplog replication → majority (2/3) reached'); }
-    if (acks === 3){ await sleep(320); log('SUCCESS', 'WRITE', 'Secondary rs2 applied → all nodes confirmed (w:all)'); }
+    if (acks >= 2) { await sleep(480); if (run !== S.wc.writeRun) return; log('SUCCESS', 'WRITE', 'Secondary rs1 applied via oplog replication → majority (2/3) reached'); }
+    if (acks === 3){ await sleep(320); if (run !== S.wc.writeRun) return; log('SUCCESS', 'WRITE', 'Secondary rs2 applied → all nodes confirmed (w:all)'); }
     log('SUCCESS', 'WRITE', `✓ Write committed — ${acks} node${acks > 1 ? 's' : ''} acknowledged. Driver unblocked.`);
   }
-  await sleep(300); btn.disabled = false;
+  await sleep(300); if (run === S.wc.writeRun) btn.disabled = false;
 }
 
 async function wcSimRead() {
   const btn = $('btn-sim-read'); btn.disabled = true;
+  const run = ++S.wc.readRun;
   const rp  = $('wc-rp')?.value || 'primary';
   const rc  = $('wc-rc')?.value || 'majority';
   const targets = {
@@ -1333,11 +1355,14 @@ async function wcSimRead() {
   };
   log('INFO', 'READ', `Read request → driver resolving target node (readPreference: ${rp})`);
   await sleep(300);
+  if (run !== S.wc.readRun) return;
   log('INFO', 'READ', `Routing to ${targets[rp]}`);
   await sleep(350);
+  if (run !== S.wc.readRun) return;
   if (rc === 'linearizable') {
     log('WARN', 'READ', 'readConcern:linearizable — coordinating with majority to confirm no later writes exist...');
     await sleep(700);
+    if (run !== S.wc.readRun) return;
   }
   const freshness = (rc === 'local' || rc === 'available')
     ? 'local node snapshot (may be slightly stale)'
@@ -1345,7 +1370,7 @@ async function wcSimRead() {
     : rc === 'linearizable' ? 'linearizable — reflects all prior writes'
     : 'snapshot-consistent (transaction)';
   log('SUCCESS', 'READ', `Document returned. Freshness: ${freshness}`);
-  await sleep(300); btn.disabled = false;
+  await sleep(300); if (run === S.wc.readRun) btn.disabled = false;
 }
 
 // ═══ js/tab-mr.js ═══
