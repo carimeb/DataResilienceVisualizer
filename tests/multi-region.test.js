@@ -48,6 +48,8 @@ function createHarness(config = '3r3b') {
     $: element,
     log() {},
     updateCAP() {},
+    tx: en => en,
+    roleLabel: role => role,
     setTimeout(callback, delay = 0) {
       const id = nextTimerId++;
       timers.set(id, { callback, at: now + Number(delay) });
@@ -144,6 +146,30 @@ test('every deployment starts with one healthy primary and a majority per shard'
     }
     assertAllShardInvariants(h);
   }
+});
+
+test('read and write access distinguish a primary, surviving secondaries, and a full outage', () => {
+  const h = createHarness();
+  const access = () => {
+    const st = h.api.mrShardStatus(0);
+    return { reads: st.readAccess, writes: st.writable };
+  };
+  assert.deepEqual(access(), { reads: 'available', writes: true });
+  h.api.mrKillRegion(0);
+  assert.deepEqual(access(), { reads: 'secondary_only', writes: false }, 'during election, reads can only target eligible secondaries');
+  h.advance(3000);
+  assert.deepEqual(access(), { reads: 'available', writes: true });
+  h.api.mrKillRegion(1);
+  assert.deepEqual(access(), { reads: 'secondary_only', writes: false }, 'a lone survivor must not accept writes');
+  assert.match(h.element('mr-svg-container').innerHTML, /data-access="writes" data-availability="blocked"/);
+  assert.match(h.element('mr-svg-container').innerHTML, /data-access="reads" data-availability="secondary_only"/);
+  h.api.mrKillRegion(2);
+  assert.deepEqual(access(), { reads: 'unavailable', writes: false });
+  h.api.mrReviveRegion(2);
+  assert.deepEqual(access(), { reads: 'secondary_only', writes: false });
+  h.api.mrReviveRegion(1);
+  h.advance(3000);
+  assert.deepEqual(access(), { reads: 'available', writes: true });
 });
 
 test('one region failure preserves every shard majority in both three-region patterns', () => {

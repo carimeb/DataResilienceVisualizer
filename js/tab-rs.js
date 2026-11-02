@@ -40,13 +40,13 @@ function rsRenderProviderSelectors() {
 
   let html = '', globalIdx = 0;
   for (let ri = 0; ri < numRegions; ri++) {
-    html += `<div style="margin:7px 0 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Region ${ri + 1}</div>`;
+    html += `<div style="margin:7px 0 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">${tx('Region', 'Região', 'Región')} ${ri + 1}</div>`;
     for (let ni = 0; ni < counts[ri]; ni++, globalIdx++) {
       const nodeId = `rs${globalIdx}`;
       const cur  = $('rs-nprov-' + nodeId)?.value || rsNodeProvDefault(globalIdx);
       const role = globalIdx === 0 ? 'PRIMARY' : 'SECONDARY';
       html += `<label class="fld" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:4px">
-        <span style="font-size:10px;color:var(--text2);min-width:90px">${nodeId} <span style="color:var(--text3)">(${role})</span></span>
+        <span style="font-size:10px;color:var(--text2);min-width:100px">${nodeId} <span style="color:var(--text3)">(${roleLabel(role)})</span></span>
         <select id="rs-nprov-${nodeId}" onchange="rsReconfigure()" style="flex:1;padding:4px 6px;font-size:11px">
           <option value="aws"   ${cur === 'aws'   ? 'selected' : ''}>AWS</option>
           <option value="gcp"   ${cur === 'gcp'   ? 'selected' : ''}>GCP</option>
@@ -68,10 +68,13 @@ function rsShowBanner(state) {
 function rsUpdateQuorumInfo() {
   const el = $('rs-quorum-info'); if (!el) return;
   const total    = S.rs.nodes.length;
-  const healthy  = S.rs.nodes.filter(n => n.state === 'HEALTHY').length;
+  const healthy  = S.rs.nodes.filter(n => n.state === 'HEALTHY' || n.state === 'VOTING').length;
   const majority = Math.floor(total / 2) + 1;
   const canFail  = majority - 1;
-  el.innerHTML = `Majority: <strong>${majority}/${total}</strong> nodes · Can tolerate <strong>${canFail}</strong> failure${canFail !== 1 ? 's' : ''} · ${healthy} currently healthy`;
+  el.innerHTML = tx(
+    `Majority: <strong>${majority}/${total}</strong> nodes · Can tolerate <strong>${canFail}</strong> failure${canFail !== 1 ? 's' : ''} · ${healthy} currently healthy`,
+    `Maioria: <strong>${majority}/${total}</strong> nós · Tolera <strong>${canFail}</strong> falha${canFail !== 1 ? 's' : ''} · ${healthy} ativos agora`,
+    `Mayoría: <strong>${majority}/${total}</strong> nodos · Tolera <strong>${canFail}</strong> fallo${canFail !== 1 ? 's' : ''} · ${healthy} activos ahora`);
 }
 
 function rsReconfigure() {
@@ -172,7 +175,9 @@ function rsRender() {
   const minRiCount  = Math.min(...riCounts);
   const hadrTag = (ri) => {
     if (numRegions2 !== 2 || maxRiCount === minRiCount) return '';
-    return totalByRi[ri] === maxRiCount ? ' (for High Availability)' : ' (for Disaster Recovery)';
+    return totalByRi[ri] === maxRiCount
+      ? tx(' (for High Availability)', ' (alta disponibilidade)', ' (alta disponibilidad)')
+      : tx(' (for Disaster Recovery)', ' (recuperação de desastres)', ' (recuperación ante desastres)');
   };
 
   regionBoxes.forEach(box => {
@@ -182,12 +187,12 @@ function rsRender() {
     svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="#FFFFFF" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>`;
     svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="#001E2B"/>`;
     svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="#001E2B"/>`;
-    svg += `<text x="${box.x + box.w/2}" y="${box.y + 17}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${p.label} · ${rname} · ${box.count} node${box.count > 1 ? 's' : ''}${tag}</text>`;
+    svg += `<text x="${box.x + box.w/2}" y="${box.y + 17}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${p.label} · ${rname} · ${tx(`${box.count} node${box.count > 1 ? 's' : ''}`, `${box.count} ${box.count > 1 ? 'nós' : 'nó'}`, `${box.count} nodo${box.count > 1 ? 's' : ''}`)}${tag}</text>`;
   });
 
   // Client Application box
   svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#001E2B" stroke-width="1.5"/>
-  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#001E2B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#001E2B" font-family="Lexend Deca,sans-serif">${tx('CLIENT APPLICATION', 'APLICAÇÃO CLIENTE', 'APLICACIÓN CLIENTE')}</text>`;
 
   // Arrow client → primary (WRITES) or → surviving nodes (READ-ONLY)
   const readOnly = quorumCount < majority;
@@ -200,8 +205,8 @@ function rsRender() {
       const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
       svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#00684A" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
       svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#00684A"/>`;
-      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#E3FCF7"/>`;
-      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+      arrowLabelSvg += `<rect x="${lx - 28}" y="${ly - 9}" width="56" height="14" rx="4" fill="#E3FCF7"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">${tx('WRITE', 'ESCRITA', 'ESCRITURA')}</text>`;
     }
   } else if (readOnly) {
     nodes.filter(n => n.state === 'HEALTHY').forEach(n => {
@@ -210,8 +215,8 @@ function rsRender() {
       const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
       svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#D4801A" stroke-width="1.5" stroke-dasharray="5 3" class="hb" marker-end="url(#arrRO)"/>`;
       svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#D4801A"/>`;
-      arrowLabelSvg += `<rect x="${lx - 24}" y="${ly - 9}" width="48" height="14" rx="4" fill="#FEF3E2"/>`;
-      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8" font-weight="700" fill="#92400E" font-family="Lexend Deca,sans-serif">READ-ONLY</text>`;
+      arrowLabelSvg += `<rect x="${lx - 38}" y="${ly - 9}" width="76" height="14" rx="4" fill="#FEF3E2"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8" font-weight="700" fill="#92400E" font-family="Lexend Deca,sans-serif">${tx('READS ONLY*', 'SÓ LEITURAS*', 'SOLO LECTURAS*')}</text>`;
     });
   }
 
@@ -246,8 +251,8 @@ function rsRender() {
     const bc = isDead ? '#FEE2E2' : isPri ? '#E3FCF7' : isRO ? '#FEF3C7' : '#F9EBFF';
     const tc = isDead ? '#991B1B' : isPri ? '#00684A' : isRO ? '#92400E' : '#001E2B';
     const lbl = isDead ? 'DOWN' : isVoting ? 'VOTING…' : isRO ? 'READ-ONLY' : n.role;
-    svg += `<rect x="${pos.x - 26}" y="${lblY + 5}" width="52" height="15" rx="7" fill="${bc}"/>`;
-    svg += `<text x="${pos.x}" y="${lblY + 15}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${lbl}</text>`;
+    svg += `<rect x="${pos.x - 39}" y="${lblY + 5}" width="78" height="15" rx="7" fill="${bc}"/>`;
+    svg += `<text x="${pos.x}" y="${lblY + 15}" text-anchor="middle" font-size="8" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${roleLabel(lbl)}</text>`;
     if (n.provider && !isDead) {
       const pv = PROV[n.provider];
       svg += `<rect x="${pos.x - 18}" y="${lblY + 23}" width="36" height="11" rx="4" fill="${pv.color}22" stroke="${pv.color}" stroke-width="0.8"/>`;
@@ -265,12 +270,12 @@ function rsRender() {
   const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#00684A' : '#92400E';
   const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#E3FCF7' : '#FEF3C7';
   const stMsg    = electing
-    ? `⚡ Election in progress — ${quorumCount}/${nodes.length} nodes voting · ${majority} required · driver holding writes`
+    ? tx(`⚡ Election — ${quorumCount}/${nodes.length} voting · ${majority} required · Writes waiting for a primary`, `⚡ Eleição — ${quorumCount}/${nodes.length} votando · ${majority} necessários · Escritas aguardam primário`, `⚡ Elección — ${quorumCount}/${nodes.length} votando · ${majority} necesarios · Escrituras esperan al primario`)
     : healthy === 0
-      ? `🔴 Complete outage — 0/${nodes.length} nodes healthy · No reads or writes possible`
+      ? tx(`🔴 Complete outage — 0/${nodes.length} nodes healthy · No reads or writes possible`, `🔴 Indisponível — 0/${nodes.length} nós ativos · Sem leituras ou escritas`, `🔴 Indisponible — 0/${nodes.length} nodos activos · Sin lecturas ni escrituras`)
       : quorumOk
-        ? `✓ Quorum: ${quorumCount}/${nodes.length} healthy · ${majority} required · Writes operational`
-        : `⚠ Quorum: ${healthy}/${nodes.length} healthy · ${majority} required · Below majority — READ-ONLY mode`;
+        ? tx(`✓ Quorum: ${quorumCount}/${nodes.length} healthy · ${majority} required · Writes operational`, `✓ Quórum: ${quorumCount}/${nodes.length} ativos · ${majority} necessários · Escritas disponíveis`, `✓ Cuórum: ${quorumCount}/${nodes.length} activos · ${majority} necesarios · Escrituras disponibles`)
+        : tx(`⚠ ${healthy}/${nodes.length} healthy · ${majority} required · Writes blocked · Secondary reads may be possible*`, `⚠ ${healthy}/${nodes.length} ativos · ${majority} necessários · Escritas bloqueadas · Leituras em secundários podem ocorrer*`, `⚠ ${healthy}/${nodes.length} activos · ${majority} necesarios · Escrituras bloqueadas · Puede haber lecturas en secundarios*`);
   svg += `<rect x="8" y="${H - 16}" width="644" height="14" rx="4" fill="${stBg}"/>`;
   svg += `<text x="330" y="${H - 6}" text-anchor="middle" font-size="9" font-weight="600" fill="${stColor}" font-family="Lexend Deca,sans-serif">${stMsg}</text>`;
 
@@ -293,21 +298,21 @@ async function rsToggleNode(id) {
   // ── RECOVERY ────────────────────────────────────────────────────────────────
   if (n.state === 'DOWN') {
     n.state = 'HEALTHY'; n.role = 'SECONDARY';
-    log('SUCCESS', 'RS', `${n.host} recovered — rejoining as SECONDARY, syncing oplog`);
+    log('SUCCESS', 'RS', tx(`${n.host} recovered — rejoining as SECONDARY, syncing oplog`, `${n.host} recuperado — retorna como SECUNDÁRIO, sincronizando o oplog`, `${n.host} recuperado — vuelve como SECUNDARIO, sincronizando el oplog`));
     const healthy   = S.rs.nodes.filter(nd => nd.state === 'HEALTHY').length;
     const hasPrimary = S.rs.nodes.some(nd => nd.role === 'PRIMARY' && nd.state === 'HEALTHY');
     if (healthy >= majority) {
       rsShowBanner('none');
       if (!hasPrimary) {
-        log('SUCCESS', 'RS', `Majority restored (${healthy}/${S.rs.nodes.length}) — triggering election to elect new Primary`);
-        log('WARN', 'DRIVER', 'Retryable writes active — driver holding operations until Primary is elected. No data will be lost.');
+        log('SUCCESS', 'RS', tx(`Majority restored (${healthy}/${S.rs.nodes.length}) — triggering election to elect new Primary`, `Maioria restaurada (${healthy}/${S.rs.nodes.length}) — iniciando eleição de um novo primário`, `Mayoría restaurada (${healthy}/${S.rs.nodes.length}) — iniciando la elección de un nuevo primario`));
+        log('WARN', 'DRIVER', tx('Writes wait for a primary. Automatic retries depend on driver settings and timeouts.', 'Escritas aguardam um primário. Tentativas automáticas dependem das opções e dos limites de tempo do driver.', 'Las escrituras esperan a un primario. Los reintentos automáticos dependen de las opciones y los tiempos de espera del driver.'));
         rsStartElection();
       } else {
-        log('SUCCESS', 'RS', `Majority restored (${healthy}/${S.rs.nodes.length}) — writes fully operational again`);
+        log('SUCCESS', 'RS', tx(`Majority restored (${healthy}/${S.rs.nodes.length}) — writes fully operational again`, `Maioria restaurada (${healthy}/${S.rs.nodes.length}) — escritas disponíveis novamente`, `Mayoría restaurada (${healthy}/${S.rs.nodes.length}) — escrituras disponibles de nuevo`));
         rsRender(); updateCAP();
       }
     } else {
-      log('INFO', 'RS', `Node recovered but majority not yet reached (${healthy}/${S.rs.nodes.length}) — remaining in READ-ONLY mode`);
+      log('INFO', 'RS', tx(`Node recovered but majority not yet reached (${healthy}/${S.rs.nodes.length}) — writes blocked; secondary reads may be possible`, `Nó recuperado, ainda sem maioria (${healthy}/${S.rs.nodes.length}) — escritas bloqueadas; leituras em secundários podem ocorrer`, `Nodo recuperado, aún sin mayoría (${healthy}/${S.rs.nodes.length}) — escrituras bloqueadas; puede haber lecturas en secundarios`));
       rsShowBanner('readonly');
       rsRender(); updateCAP();
     }
@@ -326,32 +331,32 @@ async function rsToggleNode(id) {
   };
 
   if (wasPrimary) {
-    log('ERROR', 'RS', `Primary ${n.host} is UNREACHABLE`);
+    log('ERROR', 'RS', tx(`Primary ${n.host} is UNREACHABLE`, `Primário ${n.host} está INACESSÍVEL`, `Primario ${n.host} está INACCESIBLE`));
     if (healthy >= majority) {
-      log('WARN', 'DRIVER', 'Retryable writes active — driver is holding all incoming operations. No data will be lost.');
+      log('WARN', 'DRIVER', tx('Writes wait for a primary. Eligible operations may be retried within the driver timeout.', 'Escritas aguardam um primário. Operações elegíveis podem ser repetidas dentro do limite de tempo do driver.', 'Las escrituras esperan a un primario. Las operaciones elegibles pueden reintentarse dentro del tiempo de espera del driver.'));
       rsStartElection();
     } else if (healthy === 0) {
-      log('ERROR', 'RS', 'All nodes are DOWN — complete outage');
+      log('ERROR', 'RS', tx('All nodes are DOWN — complete outage', 'Todos os nós estão FORA DO AR — indisponibilidade total', 'Todos los nodos están CAÍDOS — indisponibilidad total'));
       rsShowBanner('down');
       rsRender(); updateCAP();
     } else {
-      log('WARN', 'RS', `Only ${healthy}/${S.rs.nodes.length} nodes healthy — majority (${majority}) cannot be reached`);
-      log('INFO', 'RS', 'No downtime — replica set enters READ-ONLY mode. Reads are still served normally.');
+      log('WARN', 'RS', tx(`Only ${healthy}/${S.rs.nodes.length} nodes healthy — majority (${majority}) cannot be reached`, `Somente ${healthy}/${S.rs.nodes.length} nós ativos — não há maioria (${majority})`, `Solo ${healthy}/${S.rs.nodes.length} nodos activos — no hay mayoría (${majority})`));
+      log('INFO', 'RS', tx('Writes are blocked. Surviving secondaries may serve reads if read preference and read concern allow; data may be stale.', 'Escritas bloqueadas. Secundários disponíveis podem atender leituras se a read preference e o read concern permitirem; os dados podem estar defasados.', 'Escrituras bloqueadas. Los secundarios disponibles pueden atender lecturas si la read preference y el read concern lo permiten; los datos pueden estar desactualizados.'));
       rsShowBanner('readonly');
       rsRender(); updateCAP();
     }
   } else {
-    log('WARN', 'RS', `Secondary ${n.host} went DOWN`);
+    log('WARN', 'RS', tx(`Secondary ${n.host} went DOWN`, `Secundário ${n.host} ficou FORA DO AR`, `Secundario ${n.host} quedó CAÍDO`));
     if (healthy === 0) {
-      log('ERROR', 'RS', 'All nodes are DOWN — complete outage. No reads or writes possible.');
+      log('ERROR', 'RS', tx('All nodes are DOWN — complete outage. No reads or writes possible.', 'Todos os nós estão FORA DO AR — sem leituras ou escritas.', 'Todos los nodos están CAÍDOS — sin lecturas ni escrituras.'));
       rsShowBanner('down');
     } else if (healthy < majority) {
-      log('WARN', 'RS', `Below majority (${healthy}/${S.rs.nodes.length}) — writes suspended`);
-      log('INFO', 'RS', 'No downtime — reads continue normally. Writes resume automatically when majority is restored.');
+      log('WARN', 'RS', tx(`Below majority (${healthy}/${S.rs.nodes.length}) — writes suspended`, `Sem maioria (${healthy}/${S.rs.nodes.length}) — escritas suspensas`, `Sin mayoría (${healthy}/${S.rs.nodes.length}) — escrituras suspendidas`));
+      log('INFO', 'RS', tx('Secondary reads depend on read preference and read concern. Writes resume when a primary and a voting majority are available.', 'Leituras em secundários dependem da read preference e do read concern. Escritas retornam quando há um primário e maioria dos votos.', 'Las lecturas en secundarios dependen de la read preference y del read concern. Las escrituras se reanudan cuando hay un primario y una mayoría de votos.'));
       rsShowBanner('readonly');
     } else {
       rsShowBanner('none');
-      log('INFO', 'RS', `${healthy} nodes healthy — majority (${majority}) maintained. Fully operational.`);
+      log('INFO', 'RS', tx(`${healthy} nodes healthy — majority (${majority}) maintained. Fully operational.`, `${healthy} nós ativos — maioria (${majority}) mantida. Operação normal.`, `${healthy} nodos activos — mayoría (${majority}) conservada. Operación normal.`));
     }
     rsRender(); updateCAP();
   }
@@ -381,8 +386,8 @@ function rsCompleteElection() {
   candidates.sort((a, b) => b.priority - a.priority);
   candidates.forEach(n => { n.state = 'HEALTHY'; n.role = 'SECONDARY'; });
   candidates[0].role = 'PRIMARY';
-  log('SUCCESS', 'ELECTION', `${candidates[0].host} elected new PRIMARY (priority:${candidates[0].priority})`);
-  log('SUCCESS', 'DRIVER', 'Operations resumed — driver transparently retried all held writes. Zero data loss.');
+  log('SUCCESS', 'ELECTION', tx(`${candidates[0].host} elected new PRIMARY (priority:${candidates[0].priority})`, `${candidates[0].host} eleito novo PRIMÁRIO (prioridade:${candidates[0].priority})`, `${candidates[0].host} elegido nuevo PRIMARIO (prioridad:${candidates[0].priority})`));
+  log('SUCCESS', 'DRIVER', tx('Primary available — operations can resume. Retry outcomes depend on driver settings and the write concern used.', 'Primário disponível — operações podem retornar. O resultado das tentativas depende das opções do driver e do write concern usado.', 'Primario disponible — las operaciones pueden reanudarse. El resultado de los reintentos depende de las opciones del driver y del write concern utilizado.'));
   rsRender(); updateCAP();
 }
 
@@ -399,7 +404,7 @@ function rsReset() {
   rsRenderProviderSelectors();
   for (let i = 0; i < 3; i++) $('rs-nprov-rs' + i).value = 'aws';
   S.rs.nodes = rsBuildNodes();
-  log('SUCCESS', 'RS', 'Reset to 3 healthy AWS nodes in one region · writeConcern: w:"majority" · readPreference: primary');
+  log('SUCCESS', 'RS', tx('Reset to 3 healthy AWS nodes in one region · writeConcern: w:"majority" · readPreference: primary', 'Restaurado: 3 nós AWS ativos em uma região · writeConcern: w:"majority" · readPreference: primary', 'Restablecido: 3 nodos AWS activos en una región · writeConcern: w:"majority" · readPreference: primary'));
   rsRender(); updateCAP();
 }
 

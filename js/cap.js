@@ -76,9 +76,9 @@ function updateCAP() {
   // Mode badge
   const badge = $('cap-mode-badge');
   let mode, cls, dotTxt;
-  if      (ratio > 0.65) { mode = 'CP — Consistency Priority'; cls = 'cm-cp';  dotTxt = 'CP'; }
-  else if (ratio < 0.38) { mode = 'AP — Availability Priority'; cls = 'cm-ap'; dotTxt = 'AP'; }
-  else                   { mode = 'Balanced (PA/EC)';            cls = 'cm-bal'; dotTxt = '~'; }
+  if      (ratio > 0.65) { mode = tx('CP — Consistency Priority', 'CP — Prioridade à consistência', 'CP — Prioridad a la consistencia'); cls = 'cm-cp'; dotTxt = 'CP'; }
+  else if (ratio < 0.38) { mode = tx('AP — Availability Priority', 'AP — Prioridade à disponibilidade', 'AP — Prioridad a la disponibilidad'); cls = 'cm-ap'; dotTxt = 'AP'; }
+  else                   { mode = tx('Balanced (PA/EC)', 'Equilibrado (PA/EC)', 'Equilibrado (PA/EC)'); cls = 'cm-bal'; dotTxt = '~'; }
   if (badge) { badge.textContent = mode; badge.className = 'cap-mode ' + cls; }
   if (lbl) lbl.textContent = dotTxt;
 
@@ -95,9 +95,10 @@ function updateCAP() {
   const latPct   = _wc === 'w0' ? 10      : _wc === 'w1' ? 25       : _wc === 'wmaj' ? 50          : 80;
 
   const qualPct = { High: 85, Medium: 50, Low: 20 };
+  const qualLabel = label => ({ High: tx('High', 'Alta', 'Alta'), Medium: tx('Medium', 'Média', 'Media'), Low: tx('Low', 'Baixa', 'Baja') })[label];
   [
-    ['consistency', qualPct[cLabel], cLabel,   'var(--green)'],
-    ['availability', qualPct[aLabel], aLabel,  'var(--gcp)'],
+    ['consistency', qualPct[cLabel], qualLabel(cLabel),   'var(--green)'],
+    ['availability', qualPct[aLabel], qualLabel(aLabel),  'var(--gcp)'],
     ['latency',      latPct,         latLabel, 'var(--warn)'],
   ].forEach(([id, pct, label, color]) => {
     const f = $('m-' + id), v = $('mv-' + id);
@@ -105,15 +106,27 @@ function updateCAP() {
     if (v) v.textContent = label;
   });
   $('m-durability').style.width  = qualPct[durLabel] + '%';
-  $('mv-durability').textContent = durLabel;
+  $('mv-durability').textContent = qualLabel(durLabel);
 
   // Narrative description
   const desc = $('cap-desc-text');
   if (desc) {
-    if      (ratio > 0.7)  desc.innerHTML = `MongoDB is configured for <span class="cap-hl">strong consistency (CP)</span>. Every read returns the most recently majority-committed write. During a network partition, the minority side will stop accepting writes to preserve data integrity.`;
-    else if (ratio > 0.5)  desc.innerHTML = `MongoDB leans <span class="cap-hl">CP with good availability</span>. Majority write acknowledgment ensures durability. Reads from the primary guarantee freshness.`;
-    else if (ratio > 0.35) desc.innerHTML = `<span class="cap-hl">Balanced configuration</span>. Reads spread across nodes for throughput. Some staleness is possible on secondary reads.`;
-    else                   desc.innerHTML = `MongoDB is configured for <span class="cap-hl">high availability (AP)</span>. Every node can serve reads. Stale reads are possible — data is <em>eventually consistent</em>.`;
+    if (ratio > 0.7) desc.innerHTML = tx(
+      `This configuration emphasizes <span class="cap-hl">consistency (CP)</span>. During a network partition, the side without a voting majority cannot accept writes. Read guarantees depend on read concern and read preference.`,
+      `Esta configuração prioriza a <span class="cap-hl">consistência (CP)</span>. Em uma partição de rede, o lado sem maioria dos votos não pode aceitar escritas. As garantias de leitura dependem do read concern e da read preference.`,
+      `Esta configuración prioriza la <span class="cap-hl">consistencia (CP)</span>. En una partición de red, el lado sin mayoría de votos no puede aceptar escrituras. Las garantías de lectura dependen del read concern y de la read preference.`);
+    else if (ratio > 0.5) desc.innerHTML = tx(
+      `This configuration favors <span class="cap-hl">consistency with availability</span>. Majority write acknowledgment protects acknowledged writes across elections. Reading from the primary avoids replication lag from secondaries.`,
+      `Esta configuração favorece a <span class="cap-hl">consistência com disponibilidade</span>. A confirmação de escrita pela maioria protege as escritas confirmadas durante eleições. Ler do primário evita o atraso de replicação dos secundários.`,
+      `Esta configuración favorece la <span class="cap-hl">consistencia con disponibilidad</span>. La confirmación de escritura por la mayoría protege las escrituras confirmadas durante elecciones. Leer del primario evita el retraso de replicación de los secundarios.`);
+    else if (ratio > 0.35) desc.innerHTML = tx(
+      `<span class="cap-hl">Balanced configuration</span>. Reads can spread across nodes for throughput. Secondary reads may return stale data.`,
+      `<span class="cap-hl">Configuração equilibrada</span>. As leituras podem ser distribuídas entre os nós para aumentar a capacidade. Leituras em secundários podem retornar dados defasados.`,
+      `<span class="cap-hl">Configuración equilibrada</span>. Las lecturas pueden distribuirse entre los nodos para aumentar la capacidad. Las lecturas en secundarios pueden devolver datos desactualizados.`);
+    else desc.innerHTML = tx(
+      `This configuration favors <span class="cap-hl">read availability (AP)</span>. Surviving secondaries may serve reads, depending on read preference and read concern. Their data may be stale; writes still require a primary and a voting majority.`,
+      `Esta configuração favorece a <span class="cap-hl">disponibilidade de leitura (AP)</span>. Secundários disponíveis podem atender leituras, dependendo da read preference e do read concern. Os dados podem estar defasados; escritas ainda exigem um primário e maioria dos votos.`,
+      `Esta configuración favorece la <span class="cap-hl">disponibilidad de lectura (AP)</span>. Los secundarios disponibles pueden atender lecturas, según la read preference y el read concern. Los datos pueden estar desactualizados; las escrituras aún requieren un primario y una mayoría de votos.`);
   }
 
   // Active settings table
@@ -136,6 +149,6 @@ function updateCAP() {
       <div class="irow"><span class="ik">writeConcern</span><span class="iv">${wc.split('(')[0].trim()}</span></div>
       <div class="irow"><span class="ik">readPreference</span><span class="iv">${rp}</span></div>
       <div class="irow"><span class="ik">readConcern</span><span class="iv">${rc}</span></div>
-      <div class="irow"><span class="ik">Nodes Up</span><span class="iv">${healthy}/${S.rs.nodes.length}</span></div>`;
+      <div class="irow"><span class="ik">${tx('Nodes Up', 'Nós ativos', 'Nodos activos')}</span><span class="iv">${healthy}/${S.rs.nodes.length}</span></div>`;
   }
 }

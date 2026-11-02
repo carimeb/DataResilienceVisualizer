@@ -282,7 +282,8 @@ A failure of the region with two members removes that shard's majority. The othe
   primary,     // { si, ri, ni } or null
   down,        // no members online
   readOnly,    // legacy CAP field: some members online, but no majority
-  writable     // majority plus a healthy primary, with no election in progress
+  writable,    // majority plus a healthy primary, with no election in progress
+  readAccess   // 'available', 'secondary_only', or 'unavailable'
 }
 ```
 
@@ -290,12 +291,12 @@ A failure of the region with two members removes that shard's majority. The othe
 
 | Shard label | Condition | Meaning |
 |---|---|---|
-| `WRITES READY` | Majority and healthy primary | The shard can accept writes in this model. |
+| `READS + WRITES` | Majority and healthy primary | The shard can accept reads and writes in this model. |
 | `ELECTING PRIMARY` | Majority, election in progress | Writes pause while a primary is selected. |
-| `NO MAJORITY` | Some members online, fewer than the majority | No primary and no writes. Secondary reads depend on read preference and read concern. |
-| `UNAVAILABLE` | Zero members online | No member can serve operations. |
+| `READS ONLY* · NO MAJORITY` | Some members online, fewer than the majority | No primary and no writes. Secondary reads depend on read preference and read concern. |
+| `NO READS OR WRITES` | Zero members online | No member can serve operations. |
 
-Every row shows the online count and required quorum. `#mr-status-summary` counts shards ready for writes, while `#mr-status-detail` lists unavailable shards, shards without majority, and concurrent elections. These messages are derived from all shards together and announced through an accessible live region.
+Every row has separate badges for writes (`ALLOWED` or `BLOCKED`) and reads (`AVAILABLE`, `SECONDARY ONLY*`, or `BLOCKED`), plus the online count and required quorum. The asterisk explains that secondary reads require a compatible read preference and read concern, may be stale, and cannot satisfy reads requiring a primary. `#mr-status-summary` counts shards ready for reads and writes, while `#mr-status-detail` explains blocked access, possible secondary reads, and concurrent elections. These messages are derived from all shards together and announced through an accessible live region. All labels are available in English, Portuguese, and Spanish.
 
 ### 6.4 Fixed Diagram Layout
 
@@ -444,7 +445,7 @@ Every state change (node kill/revive, election start/complete, concern change, s
 
 **Automatic primary election:** When a primary fails and majority quorum is intact, a new primary is elected automatically within ~10 seconds. The driver's retryable write mechanism absorbs the window.
 
-**READ-ONLY mode:** Not a hard outage. When quorum is lost, the replica set/shard accepts reads but suspends writes. This is preferable to returning incorrect data.
+**READ-ONLY mode:** Writes require a primary and a voting majority. Without majority, surviving secondaries may serve reads if read preference and read concern allow. Such reads may be stale; reads requiring a primary cannot run.
 
 **Zone sharding:** Shard keys include a zone prefix (e.g., `region-1`). The zone → chunk range → shard mapping ensures writes for a given region are always routed to the shard whose primary is in that region.
 

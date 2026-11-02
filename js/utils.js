@@ -4,18 +4,33 @@ function $(id) { return document.getElementById(id); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-let logCount = 0;
+const logEntries = [];
+function renderLogEntry(entry) {
+  const labels = {
+    WARN: ['WARN', 'AVISO', 'AVISO'], ERROR: ['ERROR', 'ERRO', 'ERROR'],
+    SUCCESS: ['SUCCESS', 'SUCESSO', 'ÉXITO'], INFO: ['INFO', 'INFO', 'INFO'],
+    SYSTEM: ['SYSTEM', 'SISTEMA', 'SISTEMA'], ELECTION: ['ELECTION', 'ELEIÇÃO', 'ELECCIÓN'],
+    CONCERNS: ['CONCERNS', 'GARANTIAS', 'GARANTÍAS'],
+    WRITE: ['WRITE', 'ESCRITA', 'ESCRITURA'], READ: ['READ', 'LEITURA', 'LECTURA'],
+  };
+  const label = key => labels[key] ? tx(...labels[key]) : key;
+  const cls = { INFO: 'li', WARN: 'lw', ERROR: 'le', SUCCESS: 'ls' }[entry.level] || 'li';
+  const message = entry.choices ? tx(...entry.choices) : entry.msg;
+  entry.row.innerHTML = `<span class="lt">${entry.ts}</span><span class="${cls}">${label(entry.level)}</span><span class="lc">${label(entry.comp)}</span><span class="lm">${message}</span>`;
+}
+function renderLogs() { logEntries.forEach(renderLogEntry); }
 function log(level, comp, msg) {
   const el = document.getElementById('log');
   const now = new Date();
   const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
     .map(n => String(n).padStart(2, '0')).join(':');
-  const cls = { INFO: 'li', WARN: 'lw', ERROR: 'le', SUCCESS: 'ls' }[level] || 'li';
   const row = document.createElement('div');
   row.className = 'lr';
-  row.innerHTML = `<span class="lt">${ts}</span><span class="${cls}">${level}</span><span class="lc">${comp}</span><span class="lm">${msg}</span>`;
+  const entry = { level, comp, msg, ts, row, choices: translatedMessages.get(msg) };
+  renderLogEntry(entry);
+  logEntries.unshift(entry);
   el.insertBefore(row, el.firstChild);
-  if (++logCount > 80) el.lastChild && el.removeChild(el.lastChild);
+  while (logEntries.length > 80) logEntries.pop().row.remove();
 }
 
 // ─── MongoDB Node Icon SVG ────────────────────────────────────────────────────

@@ -4,6 +4,8 @@ An interactive, browser-based tool for exploring MongoDB's distributed architect
 
 Built for MongoDB Atlas 8.3. No server required — runs entirely in the browser via `file://`.
 
+Use the **EN / PT / ES** buttons for English, Portuguese, or Spanish. The main link opens in English; `?lang=pt` and `?lang=es` open a selected language. Switching language preserves your configuration, failures, and running simulations.
+
 ---
 
 ## Quick Start
@@ -66,7 +68,7 @@ Shows independent shard replica sets across two or three regions. Rows stay assi
 
 - **Configuration** selects three regions with **three shards and three backends**, three regions with **the same three shards and one backend**, or two regions with **two shards and two backends**. Every shard has three voting members.
 - **Dashed arrows** show oplog replication from the current primary to its secondaries. Amber connections indicate an election; gray connections with a break mark indicate an offline member. Shard colors and member IDs remain visible throughout.
-- **Per-shard status** distinguishes `WRITES READY`, `ELECTING PRIMARY`, `NO MAJORITY`, and `UNAVAILABLE`, with the number of online members and the required quorum. Without a primary, secondary reads depend on read preference and read concern.
+- **Per-shard status** displays separate read and write badges: reads and writes available, writes blocked with possible secondary reads, or both blocked. The online count and required quorum explain the result. Secondary reads require a compatible read preference and read concern, may be stale, and cannot satisfy reads that require a primary.
 - **Fail region**, **Restore**, and individual node clicks let you combine outages and recoveries, including during elections. **Restore All** returns the selected configuration to its initial healthy topology and cancels pending elections.
 - **Backend → mongos** route summaries follow the current primary even when it moves to another region. A regional outage also takes its regional backend offline; the single external backend in the one-backend pattern is outside the simulated regional failures.
 - Restored members rejoin as secondaries while a healthy primary remains in place. When majority returns to a shard without a primary, a new election runs. The model treats restored members as caught up; synchronization time, priority-based failback, replication chaining, and config server availability are not simulated.
@@ -96,6 +98,7 @@ DataResilienceVisualizer/
 ├── index.html                      # HTML + CSS shell (loads js/ modules)
 ├── js/
 │   ├── state.js                    # Global state object S, constants, config tables
+│   ├── i18n.js                     # EN/PT/ES translations and state-preserving language switch
 │   ├── utils.js                    # $(), log(), clamp(), mdbNodeIcon()
 │   ├── cap.js                      # getCAPScores(), updateCAP()
 │   ├── tab-rs.js                   # Tab 1 — Replica Set & Failover
@@ -109,7 +112,7 @@ DataResilienceVisualizer/
 └── SPEC.md                         # Full feature specification
 ```
 
-Script load order (important for globals): `state → utils → cap → tab-rs → tab-wc → tab-mr → main`
+Script load order (important for globals): `state → i18n → utils → cap → tab-rs → tab-wc → tab-mr → main`
 
 ---
 

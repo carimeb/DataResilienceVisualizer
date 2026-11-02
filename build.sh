@@ -12,6 +12,7 @@ OUT="$DIST_DIR/mongodb-cap-visualizer.html"
 
 JS_FILES=(
   js/state.js
+  js/i18n.js
   js/utils.js
   js/cap.js
   js/tab-rs.js

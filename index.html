@@ -195,6 +195,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .mr-region-control .btn-row{margin-top:6px;gap:6px}
 @media(max-width:1100px){.mr-layout{grid-template-columns:1fr}.mr-controls{display:grid;grid-template-columns:1fr 1fr;gap:14px}.mr-controls .card{margin-bottom:0}}
 @media(max-width:600px){.mr-controls{grid-template-columns:1fr}.mr-status{min-height:0}}
+.lang-toggle{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border);border-radius:7px;background:#fff;flex-shrink:0}
+.lang-toggle button{border:0;border-radius:4px;background:transparent;color:var(--text2);font:600 11px 'Lexend Deca',sans-serif;padding:6px 7px;cursor:pointer}
+.lang-toggle button.active{background:var(--green);color:var(--slate)}
+.lang-toggle button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.mr-read-note{font-size:12px;line-height:1.6;padding:9px 12px;border-radius:7px;background:#FFFBEB;color:#78350F;margin:8px 0}
 </style>
 </head>
 <body>
@@ -205,6 +210,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span class="hdr-disclaimer">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
   <div class="hdr-badge">Interactive</div>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-lang="en" lang="en" aria-label="English" aria-pressed="true" onclick="setLang('en')">EN</button>
+    <button type="button" data-lang="pt" lang="pt-BR" aria-label="Português" aria-pressed="false" onclick="setLang('pt')">PT</button>
+    <button type="button" data-lang="es" lang="es" aria-label="Español" aria-pressed="false" onclick="setLang('es')">ES</button>
+  </div>
   <button id="cap-toggle-btn" onclick="toggleCAPPanel()" title="Show/hide CAP Theorem positioning panel">⬡ CAP Positioning</button>
 </div>
 
@@ -222,15 +232,15 @@ button:disabled{opacity:.4;cursor:not-allowed}
       <div class="tip"><strong>Click any node</strong> to simulate a failure. If the Primary goes down, an election starts automatically. <strong>Click a failed node</strong> to bring it back online.</div>
       <div id="elex-banner">
         <div class="elex-title">⏳ Election in progress <span class="elex-timer" id="elex-count">10</span>s</div>
-        <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently — your application code does not need to handle this.</div>
+        <div>The MongoDB driver may <strong>retry eligible operations automatically</strong>. Retries depend on driver options and timeouts. Once a primary is elected, operations can resume; durability depends on the write concern used.</div>
       </div>
       <div id="ro-banner">
-        <div class="ro-title">📖 Replica Set in READ-ONLY mode — no downtime</div>
-        <div>The replica set has fallen below majority quorum. <strong>The database is still fully available for reads</strong> — no downtime has occurred. Writes are temporarily suspended to prevent data inconsistency. As soon as enough nodes come back online and majority is restored, writes resume automatically.</div>
+        <div class="ro-title">📖 No majority — writes blocked</div>
+        <div>The replica set has lost its voting majority. <strong>Surviving secondaries may still serve reads</strong> if the read preference allows secondaries and the read concern can be satisfied. Data may be stale. Reads requiring a primary are blocked. Writes resume after a primary and a majority are available.</div>
       </div>
       <div id="down-banner">
         <div class="ro-title">🔴 Complete outage — all nodes are DOWN</div>
-        <div>Every node in the replica set is unreachable. <strong>No reads or writes can be served.</strong> This is a full database outage. Restore at least one node to resume reads, and restore majority to resume writes.</div>
+        <div>Every node in the replica set is unreachable. <strong>No reads or writes can be served.</strong> This is a full database outage. Restore a majority and elect a primary to resume writes; reads from a recovered secondary depend on the read settings.</div>
       </div>
       <div class="two-col">
         <div>
@@ -242,6 +252,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
               <div class="li-leg"><div class="ld" style="background:var(--dead-node)"></div> Down</div>
             </div>
             <div id="rs-svg-container"></div>
+            <p class="mr-read-note">* Reads from a surviving secondary require a read preference that allows secondaries and a compatible read concern. Data may be stale. Reads that require a primary cannot run.</p>
           </div>
         </div>
         <div>
@@ -365,6 +376,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
             <div class="card-title">Global Cluster Topology <span class="hl" id="mr-config-label"></span></div>
             <div class="mr-status" role="status" aria-live="polite" aria-atomic="true"><strong id="mr-status-summary"></strong><span id="mr-status-detail"></span></div>
             <div id="mr-svg-container"></div>
+            <p class="mr-read-note">* Reads from a surviving secondary require a read preference that allows secondaries and a compatible read concern. Data may be stale. Reads that require a primary cannot run.</p>
             <div class="mr-legend"><span><i></i> Replication: primary → secondary</span><span><i class="waiting"></i> Connected; election in progress</span><span><i class="offline"></i> Connection unavailable</span></div>
             <p class="mr-note">A restored member rejoins as a secondary. If there is no primary, restoring a majority starts an election. Synchronization time and automatic return to a preferred region are not simulated.</p>
           </div>
@@ -467,12 +479,13 @@ button:disabled{opacity:.4;cursor:not-allowed}
 </div>
 
 
-<script src="js/state.js?v=8c0a6a37"></script>
-<script src="js/utils.js"></script>
-<script src="js/cap.js"></script>
-<script src="js/tab-rs.js?v=6da04f2a"></script>
-<script src="js/tab-wc.js?v=bfddf36f"></script>
-<script src="js/tab-mr.js?v=ca2bc1ac"></script>
-<script src="js/main.js?v=17adfdb1"></script>
+<script src="js/state.js?v=a65d9769e1"></script>
+<script src="js/i18n.js?v=f3d6b481ae"></script>
+<script src="js/utils.js?v=d3843af1a0"></script>
+<script src="js/cap.js?v=5af8d33388"></script>
+<script src="js/tab-rs.js?v=0cee47513d"></script>
+<script src="js/tab-wc.js?v=dbee2136d4"></script>
+<script src="js/tab-mr.js?v=962a2f5d3b"></script>
+<script src="js/main.js?v=b6b547387d"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ function toggleCAPPanel() {
   const open = main.classList.toggle('cap-visible');
   cap.classList.toggle('cap-visible', open);
   btn.classList.toggle('active', open);
-  btn.textContent = open ? '✕ Hide CAP' : '⬡ CAP Positioning';
+  btn.textContent = open ? tx('✕ Hide CAP', '✕ Ocultar CAP', '✕ Ocultar CAP') : tx('⬡ CAP Positioning', '⬡ Posição CAP', '⬡ Posición CAP');
   if (open) updateCAP();
 }
 
@@ -26,6 +26,7 @@ function switchTab(name) {
 }
 
 window.onload = function () {
+  initLang();
   rsRenderProviderSelectors();
   S.rs.nodes = rsBuildNodes();
   rsRender();
@@ -45,7 +46,7 @@ window.onload = function () {
     if (S.tab === 'rs' && !S.rs.electing) {
       const h = S.rs.nodes.filter(n => n.state === 'HEALTHY').length;
       if (h > 0 && Math.random() > 0.7)
-        log('INFO', 'HEARTBEAT', `RS heartbeat OK — ${h} nodes healthy`);
+        log('INFO', 'HEARTBEAT', tx(`RS heartbeat OK — ${h} nodes healthy`, `Heartbeat do replica set OK — ${h} nós saudáveis`, `Heartbeat del replica set OK — ${h} nodos sanos`));
     }
   }, 9000);
 };

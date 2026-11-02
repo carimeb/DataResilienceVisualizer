@@ -2,6 +2,7 @@
 
 const S = {
   tab: 'rs',
+  lang: 'en',
   rs: {
     nodes: [],            // built dynamically by rsBuildNodes() on init
     electing: false,
@@ -46,8 +47,8 @@ const MR_SC = [
 
 const MR_CFGS = {
   '3r3b': {
-    label: '3 Regions · 3 Backends',
-    desc: 'Each region has a backend. Through mongos, writes reach the current primary of the target shard. One region can fail while each shard retains 2 of 3 members; affected shards resume writes after an election.',
+    get label() { return tx("3 Regions · 3 Backends", "3 regiões · 3 backends", "3 regiones · 3 backends"); },
+    get desc() { return tx("Each region has a backend. Through mongos, writes reach the current primary of the target shard. One region can fail while each shard retains 2 of 3 members; affected shards resume writes after an election.", "Cada região tem um backend. Pelo mongos, as escritas chegam ao primário atual do shard de destino. Uma região pode cair e cada shard ainda mantém 2 de 3 membros; os shards afetados retomam as escritas após uma eleição.", "Cada región tiene un backend. A través de mongos, las escrituras llegan al primario actual del shard de destino. Puede caer una región y cada shard conserva 2 de 3 miembros; los shards afectados reanudan las escrituras después de una elección."); },
     regions: [
       { name: 'AWS Oregon',   short: 'us-west-2' },
       { name: 'AWS Ohio',     short: 'us-east-2' },
@@ -58,8 +59,8 @@ const MR_CFGS = {
     shardZones: ['region-1','region-2','region-3'],
   },
   '3r1b': {
-    label: '3 Regions · 1 Backend',
-    desc: 'One backend, shown outside the regional failure simulation, uses mongos to reach all three shards. Each shard has one member in each region. A primary can move to a surviving region after failover.',
+    get label() { return tx("3 Regions · 1 Backend", "3 regiões · 1 backend", "3 regiones · 1 backend"); },
+    get desc() { return tx("One backend, shown outside the regional failure simulation, uses mongos to reach all three shards. Each shard has one member in each region. A primary can move to a surviving region after failover.", "Um backend, fora da simulação de falhas regionais, usa mongos para acessar os três shards. Cada shard tem um membro em cada região. Após o failover, um primário pode mudar para uma região sobrevivente.", "Un backend, fuera de la simulación de fallas regionales, usa mongos para acceder a los tres shards. Cada shard tiene un miembro en cada región. Tras el failover, un primario puede pasar a una región sobreviviente."); },
     regions: [
       { name: 'AWS Oregon',   short: 'us-west-2' },
       { name: 'AWS Ohio',     short: 'us-east-2' },
@@ -70,8 +71,8 @@ const MR_CFGS = {
     shardZones: ['region-1','region-2','region-3'],
   },
   '2r2b': {
-    label: '2 Regions · 2 Backends',
-    desc: '<strong>2+1 members per shard.</strong> Losing the region with two members removes that shard’s majority. The other shard can retain its majority. Compare their separate status labels.',
+    get label() { return tx("2 Regions · 2 Backends", "2 regiões · 2 backends", "2 regiones · 2 backends"); },
+    get desc() { return tx("<strong>2+1 members per shard.</strong> Losing the region with two members removes that shard’s majority. The other shard can retain its majority. Compare their separate status labels.", "<strong>2+1 membros por shard.</strong> Perder a região com dois membros tira a maioria daquele shard. O outro shard pode manter sua maioria. Compare os indicadores de cada shard.", "<strong>2+1 miembros por shard.</strong> Perder la región con dos miembros elimina la mayoría de ese shard. El otro shard puede conservar su mayoría. Compara los indicadores de cada shard."); },
     regions: [
       { name: 'AWS Ohio',    short: 'us-east-2' },
       { name: 'AWS Virginia', short: 'us-east-1' },
