@@ -5,6 +5,7 @@
 # Usage:  ./build.sh
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
+cd "$(dirname "$0")"
 
 DIST_DIR="dist"
 OUT="$DIST_DIR/mongodb-cap-visualizer.html"
@@ -41,6 +42,14 @@ with open("index.html", encoding="utf-8") as fh:
 
 # Strip all  <script src="js/..."></script>  lines that were in the dev version
 html = re.sub(r'\n?[ \t]*<script src="js/[^"]*"></script>', '', html)
+
+# Keep the logo and favicon inside the standalone HTML.
+import base64
+def inline_svg(match):
+    with open(match.group(2), 'rb') as fh:
+        encoded = base64.b64encode(fh.read()).decode('ascii')
+    return f'{match.group(1)}="data:image/svg+xml;base64,{encoded}"'
+html = re.sub(r'(src|href)="(assets/[^"]+\.svg)"', inline_svg, html)
 
 # Inject the inlined block just before </body>
 html = html.replace("</body>", js_block + "\n</body>", 1)

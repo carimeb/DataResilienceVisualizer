@@ -21,17 +21,17 @@ function wcRender() {
 
   let svg = `<svg viewBox="0 0 580 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`;
   svg += `<defs>
-    <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
-    <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#22C55E"/></marker>
-    <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+    <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.12)"/></pattern>
+    <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#006EFF"/></marker>
     <marker id="arrOL" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="rgba(0,104,74,0.65)"/></marker>
   </defs>`;
   svg += `<rect width="580" height="400" fill="url(#dots2)" rx="8"/>`;
 
   // CLIENT APP
-  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
-    <text x="290" y="28" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
+    <text x="290" y="28" text-anchor="middle" font-size="10" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
 
   // ── WRITE PATH: App → Primary ──
   // When read also targets primary (readTarget===0), fan arrows apart to avoid label overlap
@@ -42,37 +42,37 @@ function wcRender() {
 
   if (acksNeeded === 0) {
     // w:0 fire-and-forget — grey dashed, no ACK back
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#F1F5F9" stroke="#CBD5E1"/>`;
-    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="rgba(0,30,43,.54)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#FAFBFC" stroke="rgba(0,30,43,.22)"/>`;
+    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
   } else {
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#FF6B35" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#00684A" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
     const wLabelX = sameTarget ? 330 : 315;
     const wLabelY = sameTarget ? 80 : 88;
-    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#FFF4E6"/>`;
-    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
     // ACK back from Primary to App
     const ackEndX  = sameTarget ? wX1 + 4 : wX1 - 12;
-    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
+    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#00684A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
     const ackLabelX = sameTarget ? 336 : 262;
     const ackLabelY = sameTarget ? 100 : 87;
-    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#F0FDF4"/>`;
-    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">ACK</text>`;
+    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">ACK</text>`;
   }
 
   // ── REPLICATION LINES: Primary → Secondaries ──
   for (let i = 1; i <= 2; i++) {
     const sec = npos[i];
     const needsAck = acksNeeded > i;
-    const color = needsAck ? 'rgba(0,104,74,0.6)' : '#CBD5E1';
+    const color = needsAck ? 'rgba(0,104,74,0.6)' : 'rgba(0,30,43,.22)';
     const sw    = needsAck ? 2 : 1.5;
     const cls   = needsAck ? 'class="repl"' : 'stroke-dasharray="4 4"';
     svg += `<line x1="${pri.x}" y1="${pri.y}" x2="${sec.x}" y2="${sec.y - 28}" stroke="${color}" stroke-width="${sw}" ${cls} ${needsAck ? 'marker-end="url(#arrOL)"' : ''}/>`;
     const mx = (pri.x + sec.x) / 2 + (i === 1 ? -14 : 8);
     const my = (pri.y + sec.y - 28) / 2 - 4;
     if (needsAck) {
-      svg += `<rect x="${mx - 16}" y="${my - 8}" width="32" height="13" rx="3" fill="#F0FDF4"/>`;
-      svg += `<text x="${mx}" y="${my + 1}" text-anchor="middle" font-size="8" fill="#166534" font-family="Lexend Deca,sans-serif">oplog</text>`;
+      svg += `<rect x="${mx - 16}" y="${my - 8}" width="32" height="13" rx="3" fill="#E3FCF7"/>`;
+      svg += `<text x="${mx}" y="${my + 1}" text-anchor="middle" font-size="8" fill="#00684A" font-family="Lexend Deca,sans-serif">oplog</text>`;
     }
   }
 
@@ -81,11 +81,11 @@ function wcRender() {
   const rt   = npos[readTarget];
   const rdX1 = sameTarget ? 270 : 278;
   const rdX2 = sameTarget ? (pri.x - 10) : rt.x + (readTarget === 1 ? 12 : (readTarget === 2 ? -12 : 3));
-  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#3B82F6" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
+  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#006EFF" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
   const rlx = sameTarget ? 245 : ((rdX1 + rdX2) / 2 + (readTarget === 1 ? -18 : readTarget === 2 ? 12 : 8));
   const rly = sameTarget ? 88  : (56 + rt.y - 28) / 2;
-  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#EFF6FF" stroke="#BFDBFE"/>`;
-  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#1D4ED8" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
+  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#F9EBFF" stroke="rgba(0,30,43,.22)"/>`;
+  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#001E2B" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
 
   // ── NODES ──
   npos.forEach((pos, i) => {
@@ -95,29 +95,29 @@ function wcRender() {
     svg += `<g>`;
     if (isPri) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="36" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
     svg += mdbNodeIcon(pos.x, pos.y, 54, null, pos.role);
-    svg += `<text x="${pos.x}" y="${pos.y + 42}" text-anchor="middle" font-size="9" fill="#64748B" font-family="Lexend Deca,sans-serif">${pos.id}:27017</text>`;
-    const bc = isPri ? '#DCFCE7' : '#DBEAFE', tc = isPri ? '#166534' : '#1E40AF';
+    svg += `<text x="${pos.x}" y="${pos.y + 42}" text-anchor="middle" font-size="9" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">${pos.id}:27017</text>`;
+    const bc = isPri ? '#E3FCF7' : '#F9EBFF', tc = isPri ? '#00684A' : '#001E2B';
     svg += `<rect x="${pos.x - 28}" y="${pos.y + 49}" width="56" height="16" rx="8" fill="${bc}"/>`;
     svg += `<text x="${pos.x}" y="${pos.y + 60}" text-anchor="middle" font-size="9" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${pos.role}</text>`;
     if (hasAck) {
-      svg += `<circle cx="${pos.x + 25}" cy="${pos.y - 25}" r="10" fill="#22C55E" stroke="#fff" stroke-width="2"/>`;
+      svg += `<circle cx="${pos.x + 25}" cy="${pos.y - 25}" r="10" fill="#00684A" stroke="#fff" stroke-width="2"/>`;
       svg += `<text x="${pos.x + 25}" y="${pos.y - 20}" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">✓</text>`;
     }
     if (isReadTgt) {
-      svg += `<circle cx="${pos.x - 25}" cy="${pos.y - 25}" r="10" fill="#3B82F6" stroke="#fff" stroke-width="2"/>`;
+      svg += `<circle cx="${pos.x - 25}" cy="${pos.y - 25}" r="10" fill="#006EFF" stroke="#fff" stroke-width="2"/>`;
       svg += `<text x="${pos.x - 25}" y="${pos.y - 20}" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">R</text>`;
     }
     svg += `</g>`;
   });
 
   // ── CORNER PILLS: journal + readConcern ──
-  svg += `<rect x="6" y="6" width="86" height="28" rx="6" fill="${j ? '#F0FDF4' : '#F8FAFC'}" stroke="${j ? '#86EFAC' : '#E2E8F0'}" stroke-width="1"/>`;
-  svg += `<text x="49" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">j: ${j ? 'true' : 'false'}</text>`;
-  svg += `<text x="49" y="28" text-anchor="middle" font-size="7.5" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">${j ? 'disk journal ✓' : 'memory only'}</text>`;
+  svg += `<rect x="6" y="6" width="86" height="28" rx="6" fill="${j ? '#E3FCF7' : '#FAFBFC'}" stroke="${j ? 'rgba(0,104,74,.3)' : 'rgba(0,30,43,.12)'}" stroke-width="1"/>`;
+  svg += `<text x="49" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${j ? '#00684A' : 'rgba(0,30,43,.54)'}" font-family="Lexend Deca,sans-serif">j: ${j ? 'true' : 'false'}</text>`;
+  svg += `<text x="49" y="28" text-anchor="middle" font-size="7.5" fill="${j ? '#00684A' : 'rgba(0,30,43,.54)'}" font-family="Lexend Deca,sans-serif">${j ? 'disk journal ✓' : 'memory only'}</text>`;
 
-  const rcColor = rc === 'linearizable' ? '#7C3AED' : rc === 'majority' ? '#166534' : rc === 'snapshot' ? '#0369A1' : '#92400E';
-  const rcBg    = rc === 'linearizable' ? '#EDE9FE' : rc === 'majority' ? '#F0FDF4' : rc === 'snapshot' ? '#E0F2FE' : '#FFF7ED';
-  const rcBdr   = rc === 'linearizable' ? '#C4B5FD' : rc === 'majority' ? '#86EFAC' : rc === 'snapshot' ? '#7DD3FC' : '#FED7AA';
+  const rcColor = rc === 'linearizable' ? '#001E2B' : rc === 'majority' ? '#00684A' : rc === 'snapshot' ? '#006EFF' : '#001E2B';
+  const rcBg    = rc === 'linearizable' ? '#F9EBFF' : rc === 'majority' ? '#E3FCF7' : rc === 'snapshot' ? '#F9EBFF' : '#FAFBFC';
+  const rcBdr   = rc === 'linearizable' ? 'rgba(0,30,43,.22)' : rc === 'majority' ? 'rgba(0,104,74,.3)' : rc === 'snapshot' ? 'rgba(0,30,43,.22)' : 'rgba(0,30,43,.22)';
   svg += `<rect x="488" y="6" width="86" height="28" rx="6" fill="${rcBg}" stroke="${rcBdr}" stroke-width="1"/>`;
   svg += `<text x="531" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${rcColor}" font-family="Lexend Deca,sans-serif">rc: ${rc}</text>`;
   svg += `<text x="531" y="28" text-anchor="middle" font-size="7.5" fill="${rcColor}" font-family="Lexend Deca,sans-serif">${rc === 'majority' ? 'committed ✓' : rc === 'linearizable' ? 'linearizable' : rc === 'snapshot' ? 'snapshot' : 'local state'}</text>`;

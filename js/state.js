@@ -34,11 +34,11 @@ const NODE_PROV_DEFAULTS = ['aws', 'aws', 'aws'];
 
 // ─── TAB 3 CONSTANTS ─────────────────────────────────────────────────────────
 
-// Per-shard colour palette: green / blue / pink
+// Per-shard accents from the Atlas Infinite visualizer palette.
 const MR_SC = [
-  { bright: '#00ED64', dark: '#00684A', border: '#001E2B', line: '#00684A', bg: '#DCFCE7', text: '#15803D' },
-  { bright: '#60A5FA', dark: '#1D4ED8', border: '#1E3A8A', line: '#1D4ED8', bg: '#DBEAFE', text: '#1D4ED8' },
-  { bright: '#FB7185', dark: '#BE185D', border: '#831843', line: '#BE185D', bg: '#FFE4E6', text: '#BE185D' },
+  { bright: '#00ED64', dark: '#00684A', border: '#001E2B', line: '#00684A', bg: '#E3FCF7', text: '#00684A' },
+  { bright: '#00D2FF', dark: '#006EFF', border: '#001E2B', line: '#006EFF', bg: '#F9EBFF', text: '#001E2B' },
+  { bright: '#E9FF99', dark: '#023430', border: '#001E2B', line: '#023430', bg: '#FAFBFC', text: '#023430' },
 ];
 
 const MR_CFGS = {

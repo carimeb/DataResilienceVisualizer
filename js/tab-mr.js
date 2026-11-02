@@ -143,11 +143,11 @@ function mrCompleteElection(si) {
 function mrArrow(ax1, ay1, ax2, ay2, si, curved) {
   const st     = mrShardStatus(si);
   const ro     = st.readOnly || st.down;
-  const stroke = ro ? '#3B82F6' : '#FF9900';
+  const stroke = ro ? '#006EFF' : '#00684A';
   const marker = ro ? 'url(#arrMRRO)' : 'url(#arrMRO)';
   const lbl    = st.down ? null : ro ? 'READ-ONLY' : 'WRITES';
-  const lbg    = ro ? '#EFF6FF'  : '#FFF4E6';
-  const ltx    = ro ? '#1E3A8A'  : '#C2410C';
+  const lbg    = ro ? '#F9EBFF' : '#E3FCF7';
+  const ltx    = ro ? '#001E2B' : '#00684A';
 
   let out = '';
   if (curved) {
@@ -248,18 +248,18 @@ function mrRender() {
 
   let svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
   <defs>
-    <pattern id="dotsMR" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrMRO"  markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF9900"/></marker>
-    <marker id="arrMRRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+    <pattern id="dotsMR" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.08)"/></pattern>
+    <marker id="arrMRO"  markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrMRRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#006EFF"/></marker>
   </defs>
   <rect width="${SVG_W}" height="${SVG_H}" fill="url(#dotsMR)" rx="8"/>`;
 
   // ── Region column backgrounds ──────────────────────────────────────────────
   cfg.regions.forEach((reg, ri) => {
     const x = cX(ri), w = colW, allDn = mrRegionAllDown(ri);
-    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${SVG_H - legendH - 6 - topOffset}" rx="10" fill="${allDn ? '#FEF2F2' : '#FFFDF7'}" stroke="${allDn ? '#FCA5A5' : '#FFD08A'}" stroke-width="${allDn ? 2 : 1.5}"/>`;
-    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${hdrH}" rx="10" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
-    svg += `<rect x="${x}" y="${topOffset + hdrH - 8}" width="${w}" height="8" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${SVG_H - legendH - 6 - topOffset}" rx="10" fill="${allDn ? '#FEF2F2' : '#FFFFFF'}" stroke="${allDn ? '#FCA5A5' : 'rgba(0,30,43,.22)'}" stroke-width="${allDn ? 2 : 1.5}"/>`;
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${hdrH}" rx="10" fill="${allDn ? '#C0392B' : '#001E2B'}"/>`;
+    svg += `<rect x="${x}" y="${topOffset + hdrH - 8}" width="${w}" height="8" fill="${allDn ? '#C0392B' : '#001E2B'}"/>`;
     svg += `<text x="${cCX(ri)}" y="${topOffset + 15}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${reg.name}</text>`;
     svg += `<text x="${cCX(ri)}" y="${topOffset + 27}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.9)" font-family="Lexend Deca,sans-serif">${reg.short}</text>`;
     if (allDn) {
@@ -273,10 +273,10 @@ function mrRender() {
   if (is1B) {
     // External backend above the region cards — communicates mongos routing
     const ebW = 220, ebX = SVG_W / 2 - 110, ebY = 8, ebH = 58;
-    svg += `<rect x="${ebX}" y="${ebY}" width="${ebW}" height="${ebH}" rx="8" fill="#fff" stroke="#FFD08A" stroke-width="1.5"/>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 13}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">APPLICATION BACKEND</text>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 27}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 42}" text-anchor="middle" font-size="8" fill="#92400E" font-family="Lexend Deca,sans-serif">mongos routes writes → each shard's Primary</text>`;
+    svg += `<rect x="${ebX}" y="${ebY}" width="${ebW}" height="${ebH}" rx="8" fill="#fff" stroke="#001E2B" stroke-width="1.5"/>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 13}" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">APPLICATION BACKEND</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 27}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 42}" text-anchor="middle" font-size="8" fill="#001E2B" font-family="Lexend Deca,sans-serif">mongos routes writes → each shard's Primary</text>`;
 
     const srcX = SVG_W / 2, srcY = ebY + ebH;
     // Count targets per x-column for spread offset when 2 shards land on same column post-failover
@@ -297,10 +297,10 @@ function mrRender() {
       if (mrRegionAllDown(ri)) return;
       if (!cfg.backends.includes(ri)) return;
       const cx = cCX(ri), bw = Math.min(colW - 18, 110), bx = cx - bw / 2;
-      svg += `<rect x="${bx}" y="${backY}" width="${bw}" height="${backH}" rx="7" fill="#fff" stroke="#FFD08A" stroke-width="1.3"/>`;
-      svg += `<text x="${cx}" y="${backY + 12}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">BACKEND</text>`;
-      svg += `<text x="${cx}" y="${backY + 24}" text-anchor="middle" font-size="9" font-weight="600" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
-      svg += `<text x="${cx}" y="${backY + 36}" text-anchor="middle" font-size="7.5" fill="#92400E" font-family="Lexend Deca,sans-serif">local reads &amp; writes</text>`;
+      svg += `<rect x="${bx}" y="${backY}" width="${bw}" height="${backH}" rx="7" fill="#fff" stroke="#001E2B" stroke-width="1.3"/>`;
+      svg += `<text x="${cx}" y="${backY + 12}" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">BACKEND</text>`;
+      svg += `<text x="${cx}" y="${backY + 24}" text-anchor="middle" font-size="9" font-weight="600" fill="#00684A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+      svg += `<text x="${cx}" y="${backY + 36}" text-anchor="middle" font-size="7.5" fill="#001E2B" font-family="Lexend Deca,sans-serif">local reads &amp; writes</text>`;
       // Only draw arrow when this region's home shard has a live PRIMARY here (no fallback)
       const homeSi   = cfg.primaryRegion.indexOf(ri);
       if (homeSi < 0) return;
@@ -324,7 +324,7 @@ function mrRender() {
       if (voting)        svg += `<circle cx="${x}" cy="${y}" r="${ns * 0.75}" fill="none" stroke="#F59E0B"   stroke-width="1.5" class="pring" opacity="0.5"/>`;
       svg += mrNodeSVG(x, y, si, role, dn, voting);
       const lblY    = y + ns * 0.50;
-      const pillBg  = dn ? '#EF4444' : voting ? '#F59E0B' : isPri ? sc.border : '#E2E8F0';
+      const pillBg  = dn ? '#EF4444' : voting ? '#F59E0B' : isPri ? sc.border : '#F9EBFF';
       const pillTx  = dn || voting || isPri ? '#fff' : sc.text;
       const pillTxt = dn ? 'DOWN' : voting ? 'VOTING…' : role;
       svg += `<rect x="${x - 30}" y="${lblY}" width="60" height="14" rx="6" fill="${pillBg}"/>`;
@@ -346,7 +346,7 @@ function mrRender() {
     const dotFill   = electing ? '#FCD34D' : sc.bright;
     const dotBorder = electing ? '#D97706' : sc.border;
     const nameColor = electing ? '#92400E' : sc.border;
-    const stC = electing ? '#D97706' : st.down ? '#6B7280' : st.readOnly ? '#DC2626' : '#16A34A';
+    const stC = electing ? '#D97706' : st.down ? 'rgba(0,30,43,.54)' : st.readOnly ? '#DC2626' : '#00684A';
     const stT = electing ? '⚡ Electing…' : st.down ? '⊘ Unavailable' : st.readOnly ? '⚠ READ-ONLY' : '✓ Writable';
     svg += `<circle cx="${ox + 5}" cy="${legY + 13}" r="5" fill="${dotFill}" stroke="${dotBorder}" stroke-width="1.2"/>`;
     svg += `<text x="${ox + 14}" y="${legY + 17}" font-size="9" font-weight="600" fill="${nameColor}" font-family="Lexend Deca,sans-serif">Shard ${si + 1}</text>`;

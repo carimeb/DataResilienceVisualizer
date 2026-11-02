@@ -157,8 +157,8 @@ function rsRender() {
 
   let svg = `<svg viewBox="0 0 660 ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;display:block;margin:0 auto">
   <defs>
-    <pattern id="dotsRS" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrRS" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
+    <pattern id="dotsRS" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.08)"/></pattern>
+    <marker id="arrRS" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
     <marker id="arrRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#D4801A"/></marker>
   </defs>
   <rect width="660" height="${H}" fill="url(#dotsRS)" rx="8"/>`;
@@ -179,15 +179,15 @@ function rsRender() {
     const p     = PROV[box.provider];
     const rname = REGION_NAMES[box.ri][box.provider];
     const tag   = hadrTag(box.ri);
-    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="${p.bg}" stroke="${p.border}" stroke-width="1.5"/>`;
-    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="${p.color}"/>`;
-    svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="${p.color}"/>`;
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="#FFFFFF" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>`;
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="#001E2B"/>`;
+    svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="#001E2B"/>`;
     svg += `<text x="${box.x + box.w/2}" y="${box.y + 17}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${p.label} · ${rname} · ${box.count} node${box.count > 1 ? 's' : ''}${tag}</text>`;
   });
 
   // Client Application box
-  svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
-  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#001E2B" stroke-width="1.5"/>
+  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#001E2B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
 
   // Arrow client → primary (WRITES) or → surviving nodes (READ-ONLY)
   const readOnly = quorumCount < majority;
@@ -198,10 +198,10 @@ function rsRender() {
     if (pp) {
       const ax1 = 330, ay1 = 48, ax2 = pp.x, ay2 = pp.y - nodeSize * 0.6;
       const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
-      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#FF6B35" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
-      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#FF6B35"/>`;
-      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#FFF4E6"/>`;
-      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#00684A" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
+      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#00684A"/>`;
+      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#E3FCF7"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
     }
   } else if (readOnly) {
     nodes.filter(n => n.state === 'HEALTHY').forEach(n => {
@@ -220,7 +220,7 @@ function rsRender() {
     const pp = positions[primary.id];
     nodes.filter(n => n.id !== primary.id).forEach(n => {
       const np = positions[n.id]; if (!pp || !np) return;
-      svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="${n.state === 'HEALTHY' ? '#CBD5E1' : '#FCA5A5'}" stroke-width="1.5"/>`;
+      svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="${n.state === 'HEALTHY' ? 'rgba(0,30,43,.22)' : '#FCA5A5'}" stroke-width="1.5"/>`;
       if (n.state === 'HEALTHY')
         svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="rgba(0,104,74,0.5)" stroke-width="2" class="repl"/>`;
     });
@@ -230,7 +230,7 @@ function rsRender() {
   for (let i = 0; i < secs.length - 1; i++) {
     const p1 = positions[secs[i].id], p2 = positions[secs[i + 1].id];
     if (p1 && p2)
-      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4" class="hb"/>`;
+      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgba(0,30,43,.12)" stroke-width="1" stroke-dasharray="4 4" class="hb"/>`;
   }
 
   // Nodes
@@ -241,10 +241,10 @@ function rsRender() {
     if (isPri && !isDead) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="${nodeSize * 0.75}" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
     svg += mdbNodeIcon(pos.x, pos.y, nodeSize, n.state, n.role);
     const lblY = pos.y + nodeSize * 0.83;
-    svg += `<text x="${pos.x}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="#64748B" font-family="Lexend Deca,sans-serif">${n.host}</text>`;
+    svg += `<text x="${pos.x}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">${n.host}</text>`;
     const isRO = readOnly && !isDead && !isPri;
-    const bc = isDead ? '#FEE2E2' : isPri ? '#DCFCE7' : isRO ? '#FEF3C7' : '#DBEAFE';
-    const tc = isDead ? '#991B1B' : isPri ? '#166534' : isRO ? '#92400E' : '#1E40AF';
+    const bc = isDead ? '#FEE2E2' : isPri ? '#E3FCF7' : isRO ? '#FEF3C7' : '#F9EBFF';
+    const tc = isDead ? '#991B1B' : isPri ? '#00684A' : isRO ? '#92400E' : '#001E2B';
     const lbl = isDead ? 'DOWN' : isVoting ? 'VOTING…' : isRO ? 'READ-ONLY' : n.role;
     svg += `<rect x="${pos.x - 26}" y="${lblY + 5}" width="52" height="15" rx="7" fill="${bc}"/>`;
     svg += `<text x="${pos.x}" y="${lblY + 15}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${lbl}</text>`;
@@ -262,8 +262,8 @@ function rsRender() {
   // Quorum status bar
   const electing = S.rs.electing;
   const quorumOk = quorumCount >= majority;
-  const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#166534' : '#92400E';
-  const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#DCFCE7' : '#FEF3C7';
+  const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#00684A' : '#92400E';
+  const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#E3FCF7' : '#FEF3C7';
   const stMsg    = electing
     ? `⚡ Election in progress — ${quorumCount}/${nodes.length} nodes voting · ${majority} required · driver holding writes`
     : healthy === 0

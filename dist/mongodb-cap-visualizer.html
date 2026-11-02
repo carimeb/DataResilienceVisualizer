@@ -4,56 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MongoDB Distributed Architecture & CAP Theorem Visualizer</title>
+<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CjwhLS0gTGVhZiBwYXRoIGZyb20gdGhlIG9mZmljaWFsIE1vbmdvREIgbG9nbyB1c2VkIGluIHRoZSBwYWdlIGhlYWRlci4gLS0+CjxwYXRoIGQ9Ik05LjQ5MTA5IDMuMjk0ODhDOC4yMzc1NCAxLjgyMjgyIDcuMTY4IDAuMzI3NzYzIDYuOTQ5NDkgMC4wMTcyNTA3QzYuOTI2NDkgLTAuMDA1NzUwMjIgNi44OTE5OSAtMC4wMDU3NTAyMiA2Ljg2ODk5IDAuMDE3MjUwN0M2LjY1MDQ4IDAuMzI3NzYzIDUuNTgwOTQgMS44MjI4MiA0LjMzODg5IDMuMjk0ODhDLTYuMzIyMDMgMTYuODc2OSA2LjAxNzk1IDI2LjAzMTMgNi4wMTc5NSAyNi4wMzEzTDYuMTIxNDYgMjYuMTAwM0M2LjIxMzQ2IDI3LjUxNDggNi40NDM0NyAyOS41NTA0IDYuNDQzNDcgMjkuNTUwNEg2LjkwMzQ5SDcuMzYzNTFDNy4zNjM1MSAyOS41NTA0IDcuNTkzNTEgMjcuNTI2MyA3LjY4NTUyIDI2LjEwMDNMNy43ODkwMiAyNi4wMTk4QzcuODAwNTIgMjYuMDMxMyAyMC4xNTIgMTYuODc2OSA5LjQ5MTA5IDMuMjk0ODhaTTYuOTE0OTkgMjUuODM1OEM2LjkxNDk5IDI1LjgzNTggNi4zNjI5NyAyNS4zNjQyIDYuMjEzNDYgMjUuMTIyN1YyNS4wOTk3TDYuODgwNDkgMTAuMzEwMkM2Ljg4MDQ5IDEwLjI2NDIgNi45NDk0OSAxMC4yNjQyIDYuOTQ5NDkgMTAuMzEwMkw3LjYxNjUyIDI1LjA5OTdWMjUuMTIyN0M3LjQ2NzAxIDI1LjM2NDIgNi45MTQ5OSAyNS44MzU4IDYuOTE0OTkgMjUuODM1OFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkgMSkiIGZpbGw9IiMwMDAwMDAiLz4KPC9zdmc+Cg==">
 <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#00684A;--green-light:#00ED64;--green-bg:#E8F5EE;
-  --bg:#FFFFFF;--bg1:#F0F4F8;--bg2:#F8FAFB;--bg3:#EEF2F6;
-  --border:#D8E2EC;--border2:#C5D4E0;
-  --text:#1A2B3C;--text2:#4A6070;--text3:#7A9AAA;
-  --pri-node:#00684A;--sec-node:#334E68;--dead-node:#C0392B;
+  --slate:#001E2B;--white:#FFFFFF;--spring:#00ED64;--forest:#00684A;--evergreen:#023430;--offwhite:#FAFBFC;
+  --lavender:#F9EBFF;--mist:#E3FCF7;--clearblue:#006EFF;--sky:#00D2FF;--lime:#E9FF99;
+  --green:var(--forest);--green-light:var(--spring);--green-bg:var(--mist);
+  --bg:var(--white);--bg1:var(--offwhite);--bg2:var(--offwhite);--bg3:rgba(0,30,43,.05);
+  --border:rgba(0,30,43,.12);--border2:rgba(0,30,43,.22);
+  --text:var(--slate);--text2:rgba(0,30,43,.74);--text3:rgba(0,30,43,.54);
+  --pri-node:var(--forest);--sec-node:var(--slate);--dead-node:#C0392B;
   --dead-bg:#FDF0EE;
   --warn:#D4801A;--warn-bg:#FEF3E2;
   --aws:#FF9900;--aws-bg:#FFF4E6;--aws-border:#FFD08A;
   --gcp:#4285F4;--gcp-bg:#EAF1FF;--gcp-border:#A8C4F8;
   --azure:#0078D4;--azure-bg:#E5F1FB;--azure-border:#90C4EE;
-  --mdb-dark:#001E2B;
-  --shadow:0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.07);
+  --mdb-dark:var(--slate);
+  --shadow:0 1px 4px rgba(0,30,43,.08),0 4px 16px rgba(0,30,43,.06);
+  --shadow-sm:0 1px 3px rgba(0,30,43,.07);
 }
 body{font-family:'Lexend Deca',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:12px}
 
 /* HEADER */
-#hdr{background:var(--mdb-dark);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.logo{font-size:16px;font-weight:700;color:var(--green-light);display:flex;align-items:center;gap:6px}
-.logo svg{width:20px;height:20px}
-.hdr-sub{font-size:12px;color:var(--green-light);flex:1}
-.hdr-badge{background:rgba(0,237,100,0.15);color:var(--green-light);border:1px solid rgba(0,237,100,0.35);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+#hdr{background:var(--slate);padding:9px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.logo{display:flex;align-items:center;flex-shrink:0}
+.logo img{height:22px;width:auto;display:block}
+.hdr-sub{font-size:14px;color:var(--white);font-weight:600;flex:1;min-width:240px}
+.hdr-disclaimer{font-size:10.5px;color:rgba(255,255,255,.6);font-weight:400;margin-left:8px}
+.hdr-badge{background:rgba(249,235,255,.12);color:var(--lavender);border:1px solid rgba(249,235,255,.4);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
 /* TABS */
-#tab-nav{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
+#tab-nav{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
 .tab-btn{padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--text3);font-size:12px;font-weight:500;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
 .tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--green);border-bottom-color:var(--green);font-weight:700}
+.tab-btn.active{color:var(--slate);border-bottom-color:var(--spring);font-weight:700}
 
 /* MAIN */
 #main{flex:1;display:grid;grid-template-columns:1fr;overflow:hidden;transition:grid-template-columns .3s ease}
 #main.cap-visible{grid-template-columns:1fr 300px}
 #viz{overflow-y:auto;padding:16px;background:var(--bg1)}
-#cap{background:#fff;overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
+#cap{background:var(--white);overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
 #cap.cap-visible{display:flex}
 /* CAP toggle button */
-#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,0.12);color:var(--green-light);border:1px solid rgba(0,237,100,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
-#cap-toggle-btn:hover{background:rgba(0,237,100,0.22);border-color:rgba(0,237,100,0.55)}
-#cap-toggle-btn.active{background:rgba(0,237,100,0.25);border-color:var(--green-light)}
+#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,.12);color:var(--spring);border:1px solid rgba(0,237,100,.35);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
+#cap-toggle-btn:hover{background:rgba(0,237,100,.22);border-color:var(--spring)}
+#cap-toggle-btn.active{background:var(--spring);border-color:var(--spring);color:var(--slate)}
 .panel-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700}
 
 /* LOG */
-#log{height:90px;background:#F0F4F8;border-top:2px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
-.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid #DDE6EE;animation:fi .2s ease}
+#log{height:90px;background:var(--offwhite);border-top:1px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
+.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid var(--border);animation:fi .2s ease}
 @keyframes fi{from{opacity:0}to{opacity:1}}
-.lt{color:#7A9AAA}.li{color:#2563EB}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--green)}.lc{color:#5580A0}.lm{color:var(--text2)}
+.lt{color:var(--text3)}.li{color:var(--slate)}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--forest)}.lc{color:var(--forest)}.lm{color:var(--text2)}
 
 /* TABS VISIBILITY */
 .tc{display:none}.tc.active{display:block}
@@ -70,7 +74,7 @@ select{background:#fff;border:1px solid var(--border2);color:var(--text);padding
 select:focus{outline:none;border-color:var(--green)}
 
 .btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;transition:all .2s;border:none}
-.btn-p{background:var(--green);color:#fff}.btn-p:hover{background:#004F38}
+.btn-p{background:var(--forest);color:var(--white)}.btn-p:hover{background:var(--evergreen)}
 .btn-g{background:#fff;border:1.5px solid var(--green);color:var(--green)}.btn-g:hover{background:var(--green-bg)}
 .btn-d{background:#fff;border:1.5px solid var(--dead-node);color:var(--dead-node)}.btn-d:hover{background:var(--dead-bg)}
 .btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
@@ -80,8 +84,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 /* BADGES */
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase}
-.b-p{background:#DCFCE7;color:#166534}
-.b-s{background:#DBEAFE;color:#1E40AF}
+.b-p{background:var(--mist);color:var(--forest)}
+.b-s{background:var(--lavender);color:var(--slate)}
 .b-d{background:#FEE2E2;color:#991B1B}
 .b-w{background:#FEF3C7;color:#92400E}
 
@@ -104,8 +108,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .ld{width:11px;height:11px;border-radius:50%;display:inline-block}
 
 /* INSTRUCTIONS */
-.tip{background:#EAF4FF;border:1px solid #B6D9F7;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E4070;line-height:1.7;margin-bottom:12px}
-.tip strong{color:#1558A8;font-weight:700}
+.tip{background:var(--mist);border:1px solid rgba(0,104,74,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--evergreen);line-height:1.7;margin-bottom:12px}
+.tip strong{color:var(--slate);font-weight:700}
 
 /* INFO TABLE */
 .itbl{width:100%}
@@ -123,9 +127,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 /* CAP */
 #cap-svg{width:100%}
 .cap-mode{padding:7px 10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700}
-.cm-cp{background:#DCFCE7;color:#14532D;border:1px solid #86EFAC}
-.cm-ap{background:#DBEAFE;color:#1E3A8A;border:1px solid #93C5FD}
-.cm-bal{background:#FEF3C7;color:#78350F;border:1px solid #FCD34D}
+.cm-cp{background:var(--mist);color:var(--forest);border:1px solid rgba(0,104,74,.35)}
+.cm-ap{background:var(--lavender);color:var(--slate);border:1px solid rgba(0,30,43,.25)}
+.cm-bal{background:var(--offwhite);color:var(--slate);border:1px solid var(--border2)}
 .cap-desc{font-size:12px;color:var(--text2);line-height:1.65}
 .cap-hl{color:var(--green);font-weight:600}
 
@@ -136,7 +140,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .elex-timer{font-size:22px;font-weight:800;font-family:monospace;color:#D97706;float:right}
 
 /* READ-ONLY / DOWNTIME BANNERS */
-#ro-banner{display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:12px;line-height:1.6}
+#ro-banner{display:none;background:var(--lavender);border:1.5px solid rgba(0,30,43,.35);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--slate);margin-bottom:12px;line-height:1.6}
 #ro-banner.show{display:block}
 #down-banner{display:none;background:#FEF2F2;border:1.5px solid #EF4444;border-radius:8px;padding:10px 14px;font-size:12px;color:#7F1D1D;margin-bottom:12px;line-height:1.6}
 #down-banner.show{display:block}
@@ -159,10 +163,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <div id="hdr">
   <div class="logo">
-    <svg viewBox="0 0 20 20" fill="none"><path d="M10 1.5C10 1.5 4.5 6.5 4.5 11.5C4.5 14.8 6.9 17.5 10 17.5C13.1 17.5 15.5 14.8 15.5 11.5C15.5 6.5 10 1.5 10 1.5Z" fill="#00ED64"/><line x1="10" y1="1.5" x2="10" y2="17.5" stroke="#001E2B" stroke-width="1.2"/></svg>
-    MongoDB
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjcgMzIiIGZpbGw9Im5vbmUiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iTW9uZ29EQiBMb2dvIj4KPCEtLSBPZmZpY2lhbCBNb25nb0RCIGxvZ28sIHVuYWx0ZXJlZDogcGF0aHMgZnJvbSBAbGVhZnlncmVlbi11aS9sb2dvIDExLjEuMSAoTW9uZ29EQkxvZ28sIGNvbG9yICJncmVlbi1iYXNlIiA9ICMwMEVENjQgU3ByaW5nIEdyZWVuKSAtLT4KPHBhdGggZD0iTTkuNDkxMDkgMy4yOTQ4OEM4LjIzNzU0IDEuODIyODIgNy4xNjggMC4zMjc3NjMgNi45NDk0OSAwLjAxNzI1MDdDNi45MjY0OSAtMC4wMDU3NTAyMiA2Ljg5MTk5IC0wLjAwNTc1MDIyIDYuODY4OTkgMC4wMTcyNTA3QzYuNjUwNDggMC4zMjc3NjMgNS41ODA5NCAxLjgyMjgyIDQuMzM4ODkgMy4yOTQ4OEMtNi4zMjIwMyAxNi44NzY5IDYuMDE3OTUgMjYuMDMxMyA2LjAxNzk1IDI2LjAzMTNMNi4xMjE0NiAyNi4xMDAzQzYuMjEzNDYgMjcuNTE0OCA2LjQ0MzQ3IDI5LjU1MDQgNi40NDM0NyAyOS41NTA0SDYuOTAzNDlINy4zNjM1MUM3LjM2MzUxIDI5LjU1MDQgNy41OTM1MSAyNy41MjYzIDcuNjg1NTIgMjYuMTAwM0w3Ljc4OTAyIDI2LjAxOThDNy44MDA1MiAyNi4wMzEzIDIwLjE1MiAxNi44NzY5IDkuNDkxMDkgMy4yOTQ4OFpNNi45MTQ5OSAyNS44MzU4QzYuOTE0OTkgMjUuODM1OCA2LjM2Mjk3IDI1LjM2NDIgNi4yMTM0NiAyNS4xMjI3VjI1LjA5OTdMNi44ODA0OSAxMC4zMTAyQzYuODgwNDkgMTAuMjY0MiA2Ljk0OTQ5IDEwLjI2NDIgNi45NDk0OSAxMC4zMTAyTDcuNjE2NTIgMjUuMDk5N1YyNS4xMjI3QzcuNDY3MDEgMjUuMzY0MiA2LjkxNDk5IDI1LjgzNTggNi45MTQ5OSAyNS44MzU4WiIgZmlsbD0iIzAwRUQ2NCIvPgo8cGF0aCBkPSJNMjkuOTYxOSAyMi44MTExTDI0Ljg0NDIgMTAuMzIxNkwyNC44MzI3IDEwLjI4NzFIMjAuODQyMVYxMS4xMjY3SDIxLjQ4NjFDMjEuNjgxNiAxMS4xMjY3IDIxLjg2NTYgMTEuMjA3MiAyMi4wMDM2IDExLjM0NTJDMjIuMTQxNiAxMS40ODMyIDIyLjIxMDYgMTEuNjY3MiAyMi4yMTA2IDExLjg2MjdMMjIuMDk1NiAyNC40MzI3QzIyLjA5NTYgMjQuODIzNyAyMS43NzM2IDI1LjE0NTcgMjEuMzgyNiAyNS4xNTcyTDIwLjcyNzEgMjUuMTY4N1YyNS45OTY4SDI0LjYxNDJWMjUuMTY4N0wyNC4yMTE3IDI1LjE1NzJDMjMuODIwNyAyNS4xNDU3IDIzLjQ5ODcgMjQuODIzNyAyMy40OTg3IDI0LjQzMjdWMTIuNTg3MkwyOS4wNzY0IDI1Ljk4NTJDMjkuMTU2OSAyNi4xODA4IDI5LjM0MDkgMjYuMzA3MyAyOS41NDc5IDI2LjMwNzNDMjkuNzU0OSAyNi4zMDczIDI5LjkzODkgMjYuMTgwOCAzMC4wMTk0IDI1Ljk4NTJMMzUuNDgyMSAxMi44NzQ3TDM1LjU2MjYgMjQuNDIxMkMzNS41NjI2IDI0LjgyMzcgMzUuMjQwNiAyNS4xNDU3IDM0LjgzODEgMjUuMTU3MkgzNC40MjQxVjI1Ljk4NTJIMzguOTg5OFYyNS4xNTcySDM4LjM2ODdDMzcuOTc3NyAyNS4xNTcyIDM3LjY1NTcgMjQuODIzNyAzNy42NDQyIDI0LjQzMjdMMzcuNjA5NyAxMS44NjI3QzM3LjYwOTcgMTEuNDYwMiAzNy45MzE3IDExLjEzODIgMzguMzIyNyAxMS4xMjY3TDM4Ljk4OTggMTEuMTE1MlYxMC4yNzU2SDM1LjEwMjZMMjkuOTYxOSAyMi44MTExWiIgZmlsbD0iIzAwRUQ2NCIvPgo8cGF0aCBkPSJNNjUuNzk3MyAyNC45NjE3QzY1LjY3MDggMjQuODM1MiA2NS42MDE4IDI0LjY2MjcgNjUuNjAxOCAyNC40NTU3VjE4LjI5MTVDNjUuNjAxOCAxNy4xMTg0IDY1LjI1NjggMTYuMTk4NCA2NC41NjY4IDE1LjU0MjlDNjMuODg4MiAxNC44ODczIDYyLjk0NTIgMTQuNTUzOCA2MS43NzIyIDE0LjU1MzhDNjAuMTI3NiAxNC41NTM4IDU4LjgyOCAxNS4yMjA5IDU3LjkxOTUgMTYuNTMxOUM1Ny45MDggMTYuNTU0OSA1Ny44NzM1IDE2LjU2NjQgNTcuODM5IDE2LjU2NjRDNTcuODA0NSAxNi41NjY0IDU3Ljc4MTUgMTYuNTQzNCA1Ny43ODE1IDE2LjUwODlMNTcuMzU2IDE0Ljg2NDNINTYuNjQzTDU0LjgxNDQgMTUuOTEwOVYxNi40ODU5SDU1LjI4NTlDNTUuNTA0NCAxNi40ODU5IDU1LjY4ODQgMTYuNTQzNCA1NS44MTQ5IDE2LjY1ODRDNTUuOTQxNCAxNi43NzM0IDU2LjAxMDQgMTYuOTQ1OSA1Ni4wMTA0IDE3LjE4NzRWMjQuNDQ0MkM1Ni4wMTA0IDI0LjY1MTIgNTUuOTQxNCAyNC44MjM3IDU1LjgxNDkgMjQuOTUwMkM1NS42ODg0IDI1LjA3NjcgNTUuNTE1OSAyNS4xNDU3IDU1LjMwODkgMjUuMTQ1N0g1NC44NDg5VjI1Ljk4NTNINTkuMDU4MVYyNS4xNDU3SDU4LjU5OEM1OC4zOTEgMjUuMTQ1NyA1OC4yMTg1IDI1LjA3NjcgNTguMDkyIDI0Ljk1MDJDNTcuOTY1NSAyNC44MjM3IDU3Ljg5NjUgMjQuNjUxMiA1Ny44OTY1IDI0LjQ0NDJWMTkuNjZDNTcuODk2NSAxOS4wNTA1IDU4LjAzNDUgMTguNDQxIDU4LjI4NzUgMTcuODQzQzU4LjU1MiAxNy4yNTY0IDU4Ljk0MzEgMTYuNzYxOSA1OS40NjA2IDE2LjM4MjRDNTkuOTc4MSAxNi4wMDI5IDYwLjU5OTEgMTUuODE4OSA2MS4zMTIxIDE1LjgxODlDNjIuMTE3MiAxNS44MTg5IDYyLjcyNjcgMTYuMDcxOSA2My4xMDYyIDE2LjU3NzlDNjMuNDg1NyAxNy4wODM5IDYzLjY4MTIgMTcuNzM5NSA2My42ODEyIDE4LjUyMTVWMjQuNDU1N0M2My42ODEyIDI0LjY2MjcgNjMuNjEyMiAyNC44MzUyIDYzLjQ4NTcgMjQuOTYxN0M2My4zNTkyIDI1LjA4ODIgNjMuMTg2NyAyNS4xNTcyIDYyLjk3OTcgMjUuMTU3Mkg2Mi41MTk3VjI1Ljk5NjhINjYuNzI4OVYyNS4xNTcySDY2LjI2ODhDNjYuMDk2MyAyNS4xNTcyIDY1LjkyMzggMjUuMDk5NyA2NS43OTczIDI0Ljk2MTdaIiBmaWxsPSIjMDBFRDY0Ii8+CjxwYXRoIGQ9Ik0xMDQuNDA0IDExLjIzMDNDMTAzLjIzMSAxMC42MDkyIDEwMS45MiAxMC4yODcyIDEwMC41MDYgMTAuMjg3Mkg5NC45ODU0VjExLjEyNjhIOTUuNTI1OUM5NS43MzI5IDExLjEyNjggOTUuOTE2OSAxMS4yMDczIDk2LjEwMSAxMS4zOTEzQzk2LjI3MzUgMTEuNTYzOCA5Ni4zNjU1IDExLjc1OTMgOTYuMzY1NSAxMS45NjYzVjI0LjM0MDhDOTYuMzY1NSAyNC41NDc4IDk2LjI3MzUgMjQuNzQzMyA5Ni4xMDEgMjQuOTE1OEM5NS45Mjg0IDI1LjA4ODMgOTUuNzMyOSAyNS4xODAzIDk1LjUyNTkgMjUuMTgwM0g5NC45ODU0VjI2LjAxOThIMTAwLjUwNkMxMDEuOTIgMjYuMDE5OCAxMDMuMjMxIDI1LjY5NzggMTA0LjQwNCAyNS4wNzY4QzEwNS41NzcgMjQuNDU1OCAxMDYuNTMyIDIzLjUzNTcgMTA3LjIyMiAyMi4zNjI3QzEwNy45MTIgMjEuMTg5NyAxMDguMjY4IDE5Ljc3NTEgMTA4LjI2OCAxOC4xNjVDMTA4LjI2OCAxNi41NTUgMTA3LjkxMiAxNS4xNTE5IDEwNy4yMjIgMTMuOTY3NEMxMDYuNTMyIDEyLjc3MTMgMTA1LjU4OSAxMS44NTEzIDEwNC40MDQgMTEuMjMwM1pNMTA2LjA2IDE4LjE0MkMxMDYuMDYgMTkuNjE0MSAxMDUuNzk2IDIwLjg1NjEgMTA1LjI3OCAyMS44NTY3QzEwNC43NjEgMjIuODU3MiAxMDQuMDcxIDIzLjYwNDggMTAzLjIyIDI0LjA4NzhDMTAyLjM2OSAyNC41NzA4IDEwMS40MjYgMjQuODEyMyAxMDAuNDE0IDI0LjgxMjNIOTkuMjk4MUM5OS4wOTExIDI0LjgxMjMgOTguOTA3MSAyNC43MzE4IDk4LjcyMzEgMjQuNTQ3OEM5OC41NTA2IDI0LjM3NTMgOTguNDU4NSAyNC4xNzk4IDk4LjQ1ODUgMjMuOTcyOFYxMi4zMTEzQzk4LjQ1ODUgMTIuMTA0MyA5OC41MzkxIDExLjkyMDMgOTguNzIzMSAxMS43MzYzQzk4Ljg5NTYgMTEuNTYzOCA5OS4wOTExIDExLjQ3MTggOTkuMjk4MSAxMS40NzE4SDEwMC40MTRDMTAxLjQyNiAxMS40NzE4IDEwMi4zNjkgMTEuNzEzMyAxMDMuMjIgMTIuMTk2M0MxMDQuMDcxIDEyLjY3OTMgMTA0Ljc2MSAxMy40MjY5IDEwNS4yNzggMTQuNDI3NEMxMDUuNzk2IDE1LjQyNzkgMTA2LjA2IDE2LjY3IDEwNi4wNiAxOC4xNDJaIiBmaWxsPSIjMDBFRDY0Ii8+CjxwYXRoIGQ9Ik0xMjEuMjc1IDE4Ljk3QzEyMC43NjkgMTguMzgzNSAxMTkuNzkyIDE3Ljg4ODkgMTE4LjY0MiAxNy42MjQ0QzEyMC4yMjkgMTYuODMwOSAxMjEuMDQ1IDE1LjcxNTMgMTIxLjA0NSAxNC4yNzc4QzEyMS4wNDUgMTMuNDk1OCAxMjAuODM4IDEyLjc5NDIgMTIwLjQyNCAxMi4xOTYyQzEyMC4wMSAxMS41OTgyIDExOS40MjQgMTEuMTE1MiAxMTguNjc2IDEwLjc4MTdDMTE3LjkyOSAxMC40NDgxIDExNy4wNTUgMTAuMjc1NiAxMTYuMDY2IDEwLjI3NTZIMTA5Ljg2N1YxMS4xMTUySDExMC4zNjJDMTEwLjU2OSAxMS4xMTUyIDExMC43NTMgMTEuMTk1NyAxMTAuOTM3IDExLjM3OTdDMTExLjEwOSAxMS41NTIyIDExMS4yMDEgMTEuNzQ3NyAxMTEuMjAxIDExLjk1NDdWMjQuMzI5MkMxMTEuMjAxIDI0LjUzNjIgMTExLjEwOSAyNC43MzE3IDExMC45MzcgMjQuOTA0MkMxMTAuNzY0IDI1LjA3NjcgMTEwLjU2OSAyNS4xNjg3IDExMC4zNjIgMjUuMTY4N0gxMDkuODIxVjI2LjAwODJIMTE2LjU0OUMxMTcuNTcyIDI2LjAwODIgMTE4LjUyNyAyNS44MzU3IDExOS4zODkgMjUuNDkwN0MxMjAuMjUyIDI1LjE0NTcgMTIwLjk0MiAyNC42Mzk3IDEyMS40MzYgMjMuOTcyN0MxMjEuOTQzIDIzLjMwNTYgMTIyLjE5NiAyMi40ODkxIDEyMi4xOTYgMjEuNTQ2MUMxMjIuMTk2IDIwLjUzNCAxMjEuODg1IDE5LjY4MyAxMjEuMjc1IDE4Ljk3Wk0xMTMuNTcgMjQuNTQ3N0MxMTMuMzk4IDI0LjM3NTIgMTEzLjMwNiAyNC4xNzk3IDExMy4zMDYgMjMuOTcyN1YxOC40MThIMTE2LjUwM0MxMTcuNjMgMTguNDE4IDExOC40OTIgMTguNzA1NSAxMTkuMDkgMTkuMjgwNUMxMTkuNjg4IDE5Ljg1NTUgMTE5Ljk4NyAyMC42MDMgMTE5Ljk4NyAyMS41MjMxQzExOS45ODcgMjIuMDc1MSAxMTkuODQ5IDIyLjYxNTYgMTE5LjU5NiAyMy4xMTAxQzExOS4zMzIgMjMuNjE2MiAxMTguOTQxIDI0LjAxODcgMTE4LjQxMiAyNC4zMjkyQzExNy44OTQgMjQuNjM5NyAxMTcuMjUgMjQuODAwNyAxMTYuNTAzIDI0LjgwMDdIMTE0LjE0NUMxMTMuOTI3IDI0LjgxMjIgMTEzLjc0MyAyNC43MzE3IDExMy41NyAyNC41NDc3Wk0xMTMuMzA2IDE3LjIzMzRWMTIuMjk5N0MxMTMuMzA2IDEyLjA5MjcgMTEzLjM4NiAxMS45MDg3IDExMy41NyAxMS43MjQ3QzExMy43NDMgMTEuNTUyMiAxMTMuOTM4IDExLjQ2MDIgMTE0LjE0NSAxMS40NjAySDExNS42NjNDMTE2Ljc1NiAxMS40NjAyIDExNy41NjEgMTEuNzM2MiAxMTguMDY3IDEyLjI2NTJDMTE4LjU3MyAxMi44MDU3IDExOC44MjYgMTMuNDk1OCAxMTguODI2IDE0LjM0NjhDMTE4LjgyNiAxNS4yMjA4IDExOC41ODQgMTUuOTIyNCAxMTguMTEzIDE2LjQ1MTRDMTE3LjY0MSAxNi45Njg5IDExNi45MjggMTcuMjMzNCAxMTUuOTg1IDE3LjIzMzRIMTEzLjMwNloiIGZpbGw9IiMwMEVENjQiLz4KPHBhdGggZD0iTTQ5Ljc1NDIgMTUuMzAxM0M0OC44Njg2IDE0LjgxODMgNDcuODc5NiAxNC41NjUzIDQ2LjgxIDE0LjU2NTNDNDUuNzQwNSAxNC41NjUzIDQ0Ljc0IDE0LjgwNjggNDMuODY1OSAxNS4zMDEzQzQyLjk4MDQgMTUuNzg0NCA0Mi4yNzg5IDE2LjQ4NTkgNDEuNzYxMyAxNy4zNzE0QzQxLjI0MzggMTguMjU3IDQwLjk3OTMgMTkuMjkyIDQwLjk3OTMgMjAuNDQyQzQwLjk3OTMgMjEuNTkyMSA0MS4yNDM4IDIyLjYyNzEgNDEuNzYxMyAyMy41MTI3QzQyLjI3ODkgMjQuMzk4MiA0Mi45ODA0IDI1LjA5OTcgNDMuODY1OSAyNS41ODI3QzQ0Ljc1MTUgMjYuMDY1OCA0NS43NDA1IDI2LjMxODggNDYuODEgMjYuMzE4OEM0Ny44Nzk2IDI2LjMxODggNDguODgwMSAyNi4wNzczIDQ5Ljc1NDIgMjUuNTgyN0M1MC42Mzk3IDI1LjA5OTcgNTEuMzQxMiAyNC4zOTgyIDUxLjg1ODcgMjMuNTEyN0M1Mi4zNzYzIDIyLjYyNzEgNTIuNjQwOCAyMS41OTIxIDUyLjY0MDggMjAuNDQyQzUyLjY0MDggMTkuMjkyIDUyLjM3NjMgMTguMjU3IDUxLjg1ODcgMTcuMzcxNEM1MS4zNDEyIDE2LjQ3NDQgNTAuNjI4MiAxNS43ODQ0IDQ5Ljc1NDIgMTUuMzAxM1pNNTAuNjA1MiAyMC40NDJDNTAuNjA1MiAyMS44NTY2IDUwLjI2MDIgMjMuMDA2NiA0OS41NzAxIDIzLjgzNDdDNDguODkxNiAyNC42NjI3IDQ3Ljk2MDEgMjUuMDg4MiA0Ni44MSAyNS4wODgyQzQ1LjY2IDI1LjA4ODIgNDQuNzI4NSAyNC42NjI3IDQ0LjA0OTkgMjMuODM0N0M0My4zNTk5IDIzLjAwNjYgNDMuMDE0OSAyMS44NTY2IDQzLjAxNDkgMjAuNDQyQzQzLjAxNDkgMTkuMDI3NSA0My4zNTk5IDE3Ljg3NzQgNDQuMDQ5OSAxNy4wNDk0QzQ0LjcyODUgMTYuMjIxNCA0NS42NiAxNS43OTU5IDQ2LjgxIDE1Ljc5NTlDNDcuOTYwMSAxNS43OTU5IDQ4Ljg5MTYgMTYuMjIxNCA0OS41NzAxIDE3LjA0OTRDNTAuMjYwMiAxNy44Nzc0IDUwLjYwNTIgMTkuMDE2IDUwLjYwNTIgMjAuNDQyWiIgZmlsbD0iIzAwRUQ2NCIvPgo8cGF0aCBkPSJNOTAuMzM5MiAxNS4zMDEzQzg5LjQ1MzcgMTQuODE4MyA4OC40NjQ3IDE0LjU2NTMgODcuMzk1MSAxNC41NjUzQzg2LjMyNTYgMTQuNTY1MyA4NS4zMjUgMTQuODA2OCA4NC40NTEgMTUuMzAxM0M4My41NjU1IDE1Ljc4NDQgODIuODYzOSAxNi40ODU5IDgyLjM0NjQgMTcuMzcxNEM4MS44Mjg5IDE4LjI1NyA4MS41NjQ0IDE5LjI5MiA4MS41NjQ0IDIwLjQ0MkM4MS41NjQ0IDIxLjU5MjEgODEuODI4OSAyMi42MjcxIDgyLjM0NjQgMjMuNTEyN0M4Mi44NjM5IDI0LjM5ODIgODMuNTY1NSAyNS4wOTk3IDg0LjQ1MSAyNS41ODI3Qzg1LjMzNjUgMjYuMDY1OCA4Ni4zMjU2IDI2LjMxODggODcuMzk1MSAyNi4zMTg4Qzg4LjQ2NDcgMjYuMzE4OCA4OS40NjUyIDI2LjA3NzMgOTAuMzM5MiAyNS41ODI3QzkxLjIyNDggMjUuMDk5NyA5MS45MjYzIDI0LjM5ODIgOTIuNDQzOCAyMy41MTI3QzkyLjk2MTMgMjIuNjI3MSA5My4yMjU4IDIxLjU5MjEgOTMuMjI1OCAyMC40NDJDOTMuMjI1OCAxOS4yOTIgOTIuOTYxMyAxOC4yNTcgOTIuNDQzOCAxNy4zNzE0QzkxLjkyNjMgMTYuNDc0NCA5MS4yMjQ4IDE1Ljc4NDQgOTAuMzM5MiAxNS4zMDEzWk05MS4xOTAzIDIwLjQ0MkM5MS4xOTAzIDIxLjg1NjYgOTAuODQ1MyAyMy4wMDY2IDkwLjE1NTIgMjMuODM0N0M4OS40NzY3IDI0LjY2MjcgODguNTQ1MiAyNS4wODgyIDg3LjM5NTEgMjUuMDg4MkM4Ni4yNDUxIDI1LjA4ODIgODUuMzEzNSAyNC42NjI3IDg0LjYzNSAyMy44MzQ3QzgzLjk0NSAyMy4wMDY2IDgzLjYgMjEuODU2NiA4My42IDIwLjQ0MkM4My42IDE5LjAxNiA4My45NDUgMTcuODc3NCA4NC42MzUgMTcuMDQ5NEM4NS4zMTM1IDE2LjIyMTQgODYuMjQ1MSAxNS43OTU5IDg3LjM5NTEgMTUuNzk1OUM4OC41NDUyIDE1Ljc5NTkgODkuNDc2NyAxNi4yMjE0IDkwLjE1NTIgMTcuMDQ5NEM5MC44NDUzIDE3Ljg3NzQgOTEuMTkwMyAxOS4wMTYgOTEuMTkwMyAyMC40NDJaIiBmaWxsPSIjMDBFRDY0Ii8+CjxwYXRoIGQ9Ik03My45NjI2IDE0LjU2NTNDNzMuMDQyNiAxNC41NjUzIDcyLjIwMyAxNC43NjA4IDcxLjQ0NCAxNS4xNTE4QzcwLjY4NSAxNS41NDI4IDcwLjA4NyAxNi4wNzE5IDY5LjY2MTQgMTYuNzUwNEM2OS4yMzU5IDE3LjQxNzQgNjkuMDE3NCAxOC4xNjQ5IDY5LjAxNzQgMTguOTU4NUM2OS4wMTc0IDE5LjY3MTUgNjkuMTc4NCAyMC4zMjcgNjkuNTExOSAyMC45MTM2QzY5LjgzNCAyMS40NzcxIDcwLjI3MSAyMS45NDg2IDcwLjgyMyAyMi4zMzk2TDY5LjE3ODQgMjQuNTcwN0M2OC45NzE0IDI0Ljg0NjcgNjguOTQ4NCAyNS4yMTQ3IDY5LjA5NzkgMjUuNTEzN0M2OS4yNTg5IDI1LjgyNDIgNjkuNTU3OSAyNi4wMDgzIDY5LjkwMyAyNi4wMDgzSDcwLjM3NDVDNjkuOTE0NSAyNi4zMTg4IDY5LjU0NjQgMjYuNjg2OCA2OS4yOTM0IDI3LjEyMzhDNjguOTk0NCAyNy42MTgzIDY4Ljg0NDkgMjguMTM1OCA2OC44NDQ5IDI4LjY2NDlDNjguODQ0OSAyOS42NTM5IDY5LjI4MTkgMzAuNDcwNCA3MC4xNDQ1IDMxLjA4QzcwLjk5NTUgMzEuNjg5NSA3Mi4xOTE1IDMyIDczLjY5ODEgMzJDNzQuNzQ0NiAzMiA3NS43NDUyIDMxLjgyNzUgNzYuNjUzNyAzMS40OTRDNzcuNTczOCAzMS4xNjA1IDc4LjMyMTMgMzAuNjY1OSA3OC44NzMzIDMwLjAyMTlDNzkuNDM2OCAyOS4zNzc5IDc5LjcyNDMgMjguNTk1OSA3OS43MjQzIDI3LjY5ODhDNzkuNzI0MyAyNi43NTU4IDc5LjM3OTMgMjYuMDg4OCA3OC41NzQzIDI1LjQ0NDdDNzcuODg0MyAyNC45MDQyIDc2LjgwMzIgMjQuNjE2NyA3NS40NTc3IDI0LjYxNjdINzAuODU3NUM3MC44NDYgMjQuNjE2NyA3MC44MzQ1IDI0LjYwNTIgNzAuODM0NSAyNC42MDUyQzcwLjgzNDUgMjQuNjA1MiA3MC44MjMgMjQuNTgyMiA3MC44MzQ1IDI0LjU3MDdMNzIuMDMwNSAyMi45NjA2QzcyLjM1MjUgMjMuMTEwMSA3Mi42NTE2IDIzLjIwMjEgNzIuOTE2MSAyMy4yNTk2QzczLjE5MjEgMjMuMzE3MiA3My41MDI2IDIzLjM0MDIgNzMuODQ3NiAyMy4zNDAyQzc0LjgxMzYgMjMuMzQwMiA3NS42ODc3IDIzLjE0NDYgNzYuNDQ2NyAyMi43NTM2Qzc3LjIwNTcgMjIuMzYyNiA3Ny44MTUzIDIxLjgzMzYgNzguMjUyMyAyMS4xNTUxQzc4LjY4OTMgMjAuNDg4IDc4LjkwNzggMTkuNzQwNSA3OC45MDc4IDE4Ljk0N0M3OC45MDc4IDE4LjA5NTkgNzguNDkzOCAxNi41NDM0IDc3LjM2NjcgMTUuNzQ5OUM3Ny4zNjY3IDE1LjczODQgNzcuMzc4MiAxNS43Mzg0IDc3LjM3ODIgMTUuNzM4NEw3OS44NTA4IDE2LjAxNDRWMTQuODc1OEg3NS44OTQ3Qzc1LjI3MzcgMTQuNjY4OCA3NC42MTgxIDE0LjU2NTMgNzMuOTYyNiAxNC41NjUzWk03NS4zNDI3IDIxLjc2NDZDNzQuOTA1NiAyMS45OTQ2IDc0LjQzNDEgMjIuMTIxMSA3My45NjI2IDIyLjEyMTFDNzMuMTkyMSAyMi4xMjExIDcyLjUxMzYgMjEuODQ1MSA3MS45Mzg1IDIxLjMwNDZDNzEuMzYzNSAyMC43NjQxIDcxLjA3NiAxOS45NzA1IDcxLjA3NiAxOC45NTg1QzcxLjA3NiAxNy45NDY0IDcxLjM2MzUgMTcuMTUyOSA3MS45Mzg1IDE2LjYxMjRDNzIuNTEzNiAxNi4wNzE5IDczLjE5MjEgMTUuNzk1OSA3My45NjI2IDE1Ljc5NTlDNzQuNDQ1NiAxNS43OTU5IDc0LjkwNTYgMTUuOTEwOSA3NS4zNDI3IDE2LjE1MjRDNzUuNzc5NyAxNi4zODI0IDc2LjEzNjIgMTYuNzM4OSA3Ni40MjM3IDE3LjIxMDRDNzYuNjk5NyAxNy42ODE5IDc2Ljg0OTIgMTguMjY4NSA3Ni44NDkyIDE4Ljk1ODVDNzYuODQ5MiAxOS42NiA3Ni43MTEyIDIwLjI0NjUgNzYuNDIzNyAyMC43MDY1Qzc2LjEzNjIgMjEuMTc4MSA3NS43Nzk3IDIxLjUyMzEgNzUuMzQyNyAyMS43NjQ2Wk03Mi4yMTQ1IDI1Ljk5NjhINzUuMzMxMkM3Ni4xOTM3IDI1Ljk5NjggNzYuNzQ1NyAyNi4xNjkzIDc3LjExMzcgMjYuNTM3M0M3Ny40ODE3IDI2LjkwNTMgNzcuNjY1OCAyNy4zOTk4IDc3LjY2NTggMjcuOTc0OEM3Ny42NjU4IDI4LjgxNDQgNzcuMzMyMiAyOS41MDQ0IDc2LjY2NTIgMzAuMDIxOUM3NS45OTgyIDMwLjUzOTQgNzUuMTAxMiAzMC44MDM5IDczLjk5NzEgMzAuODAzOUM3My4wMzExIDMwLjgwMzkgNzIuMjI2IDMwLjU4NTQgNzEuNjM5NSAzMC4xNzE0QzcxLjA1MyAyOS43NTc0IDcwLjc1NCAyOS4xMjQ5IDcwLjc1NCAyOC4zMTk4QzcwLjc1NCAyNy44MTM4IDcwLjg5MiAyNy4zNDIzIDcxLjE2OCAyNi45MjgzQzcxLjQ1NTUgMjYuNTE0MyA3MS43ODkgMjYuMjE1MyA3Mi4yMTQ1IDI1Ljk5NjhaIiBmaWxsPSIjMDBFRDY0Ii8+CjxwYXRoIGQ9Ik0xMjQuNTQyIDI1Ljg1ODhDMTI0LjMxMiAyNS43MzIzIDEyNC4xMzkgMjUuNTQ4MyAxMjQuMDAxIDI1LjMyOThDMTIzLjg3NSAyNS4wOTk4IDEyMy44MDYgMjQuODU4MiAxMjMuODA2IDI0LjU5MzdDMTIzLjgwNiAyNC4zMjkyIDEyMy44NzUgMjQuMDc2MiAxMjQuMDAxIDIzLjg1NzdDMTI0LjEyOCAyMy42Mjc3IDEyNC4zMTIgMjMuNDU1MiAxMjQuNTQyIDIzLjMyODdDMTI0Ljc3MiAyMy4yMDIyIDEyNS4wMjUgMjMuMTMzMiAxMjUuMzEyIDIzLjEzMzJDMTI1LjYgMjMuMTMzMiAxMjUuODUzIDIzLjIwMjIgMTI2LjA4MyAyMy4zMjg3QzEyNi4zMTMgMjMuNDU1MiAxMjYuNDg1IDIzLjYzOTIgMTI2LjYyMyAyMy44NTc3QzEyNi43NSAyNC4wODc3IDEyNi44MTkgMjQuMzI5MiAxMjYuODE5IDI0LjU5MzdDMTI2LjgxOSAyNC44NTgyIDEyNi43NSAyNS4xMTEzIDEyNi42MjMgMjUuMzI5OEMxMjYuNDk3IDI1LjU1OTggMTI2LjMxMyAyNS43MzIzIDEyNi4wODMgMjUuODU4OEMxMjUuODUzIDI1Ljk4NTMgMTI1LjYgMjYuMDU0MyAxMjUuMzEyIDI2LjA1NDNDMTI1LjAyNSAyNi4wNTQzIDEyNC43NzIgMjUuOTg1MyAxMjQuNTQyIDI1Ljg1ODhaTTEyNS45NTYgMjUuNjg2M0MxMjYuMTUyIDI1LjU4MjggMTI2LjI5IDI1LjQyMTggMTI2LjQwNSAyNS4yMzc4QzEyNi41MDggMjUuMDQyMyAxMjYuNTY2IDI0LjgyMzcgMTI2LjU2NiAyNC41ODIyQzEyNi41NjYgMjQuMzQwNyAxMjYuNTA4IDI0LjEyMjIgMTI2LjQwNSAyMy45MjY3QzEyNi4zMDEgMjMuNzMxMiAxMjYuMTUyIDIzLjU4MTcgMTI1Ljk1NiAyMy40NzgyQzEyNS43NjEgMjMuMzc0NyAxMjUuNTU0IDIzLjMxNzIgMTI1LjMxMiAyMy4zMTcyQzEyNS4wNzEgMjMuMzE3MiAxMjQuODY0IDIzLjM3NDcgMTI0LjY2OCAyMy40NzgyQzEyNC40NzMgMjMuNTgxNyAxMjQuMzM1IDIzLjc0MjcgMTI0LjIyIDIzLjkyNjdDMTI0LjExNiAyNC4xMjIyIDEyNC4wNTkgMjQuMzQwNyAxMjQuMDU5IDI0LjU4MjJDMTI0LjA1OSAyNC44MjM3IDEyNC4xMTYgMjUuMDQyMyAxMjQuMjIgMjUuMjM3OEMxMjQuMzIzIDI1LjQzMzMgMTI0LjQ3MyAyNS41ODI4IDEyNC42NjggMjUuNjg2M0MxMjQuODY0IDI1Ljc4OTggMTI1LjA3MSAyNS44NDczIDEyNS4zMTIgMjUuODQ3M0MxMjUuNTU0IDI1Ljg0NzMgMTI1Ljc2MSAyNS44MDEzIDEyNS45NTYgMjUuNjg2M1pNMTI0LjY5MSAyNS4yODM4VjI1LjE4MDNMMTI0LjcxNCAyNS4xNjg4SDEyNC43ODNDMTI0LjgwNiAyNS4xNjg4IDEyNC44MjkgMjUuMTU3MyAxMjQuODQxIDI1LjE0NThDMTI0Ljg2NCAyNS4xMjI4IDEyNC44NjQgMjUuMTExMyAxMjQuODY0IDI1LjA4ODNWMjQuMDE4N0MxMjQuODY0IDIzLjk5NTcgMTI0Ljg1MiAyMy45NzI3IDEyNC44NDEgMjMuOTYxMkMxMjQuODE4IDIzLjkzODIgMTI0LjgwNiAyMy45MzgyIDEyNC43ODMgMjMuOTM4MkgxMjQuNzE0TDEyNC42OTEgMjMuOTI2N1YyMy44MjMyTDEyNC43MTQgMjMuODExN0gxMjUuMzEyQzEyNS40ODUgMjMuODExNyAxMjUuNjExIDIzLjg0NjIgMTI1LjcxNSAyMy45MjY3QzEyNS44MTggMjQuMDA3MiAxMjUuODY0IDI0LjExMDcgMTI1Ljg2NCAyNC4yNDg3QzEyNS44NjQgMjQuMzUyMiAxMjUuODMgMjQuNDU1NyAxMjUuNzQ5IDI0LjUyNDdDMTI1LjY2OSAyNC42MDUyIDEyNS41NzcgMjQuNjUxMiAxMjUuNDYyIDI0LjY2MjdMMTI1LjYgMjQuNzA4N0wxMjUuODY0IDI1LjEzNDNDMTI1Ljg4NyAyNS4xNjg4IDEyNS45MSAyNS4xODAzIDEyNS45NDUgMjUuMTgwM0gxMjYuMDE0TDEyNi4wMjUgMjUuMTkxOFYyNS4yOTUzTDEyNi4wMTQgMjUuMzA2OEgxMjUuNjU3TDEyNS42MzQgMjUuMjk1M0wxMjUuMjY2IDI0LjY3NDJIMTI1LjE3NFYyNS4wODgzQzEyNS4xNzQgMjUuMTExMyAxMjUuMTg2IDI1LjEzNDMgMTI1LjE5NyAyNS4xNDU4QzEyNS4yMiAyNS4xNjg4IDEyNS4yMzIgMjUuMTY4OCAxMjUuMjU1IDI1LjE2ODhIMTI1LjMyNEwxMjUuMzQ3IDI1LjE4MDNWMjUuMjgzOEwxMjUuMzI0IDI1LjI5NTNIMTI0LjcxNEwxMjQuNjkxIDI1LjI4MzhaTTEyNS4yNjYgMjQuNTM2MkMxMjUuMzU4IDI0LjUzNjIgMTI1LjQzOSAyNC41MTMyIDEyNS40ODUgMjQuNDU1N0MxMjUuNTMxIDI0LjQwOTcgMTI1LjU2NSAyNC4zMjkyIDEyNS41NjUgMjQuMjM3MkMxMjUuNTY1IDI0LjE0NTIgMTI1LjU0MiAyNC4wNzYyIDEyNS40OTYgMjQuMDE4N0MxMjUuNDUgMjMuOTYxMiAxMjUuMzgxIDIzLjkzODIgMTI1LjMwMSAyMy45MzgySDEyNS4yNTVDMTI1LjIzMiAyMy45MzgyIDEyNS4yMDkgMjMuOTQ5NyAxMjUuMTk3IDIzLjk2MTJDMTI1LjE3NCAyMy45ODQyIDEyNS4xNzQgMjMuOTk1NyAxMjUuMTc0IDI0LjAxODdWMjQuNTM2MkgxMjUuMjY2WiIgZmlsbD0iIzAwRUQ2NCIvPgo8L3N2Zz4K" alt="MongoDB">
   </div>
-  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span style="font-size:10px;opacity:0.55;margin-left:8px">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
+  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span class="hdr-disclaimer">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
   <div class="hdr-badge">Interactive</div>
   <button id="cap-toggle-btn" onclick="toggleCAPPanel()" title="Show/hide CAP Theorem positioning panel">⬡ CAP Positioning</button>
 </div>
@@ -221,7 +224,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
               </select>
             </label>
             <div id="rs-region-providers"></div>
-            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;font-size:11px;color:#166534;line-height:1.5"></div>
+            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:var(--mist);border:1px solid rgba(0,104,74,.35);border-radius:6px;font-size:11px;color:var(--evergreen);line-height:1.5"></div>
           </div>
           <div class="card">
             <div class="card-title">Write &amp; Read Concerns</div>
@@ -320,7 +323,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         <div class="elex-title">⏳ Election in progress — <span id="mr-elex-label"></span> <span class="elex-timer" id="mr-elex-count"></span>s</div>
         <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently.</div>
       </div>
-      <div id="mr-ro-banner" style="display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:10px;line-height:1.6">
+      <div id="mr-ro-banner" style="display:none;background:var(--lavender);border:1.5px solid rgba(0,30,43,.35);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--slate);margin-bottom:10px;line-height:1.6">
         <div class="ro-title" id="mr-ro-title">📖 Shard in READ-ONLY mode</div>
         <div>This shard has fallen below majority quorum. <strong>Reads are still served normally.</strong> Writes resume automatically once majority is restored.</div>
       </div>
@@ -368,25 +371,25 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <!-- CAP PANEL -->
   <div id="cap">
     <div class="panel-title">CAP Theorem Position</div>
-    <div style="background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;padding:7px 10px;font-size:10.5px;color:#713F12;line-height:1.6;margin-bottom:8px">
+    <div style="background:var(--mist);border:1px solid rgba(0,104,74,.3);border-radius:6px;padding:7px 10px;font-size:10.5px;color:var(--evergreen);line-height:1.6;margin-bottom:8px">
       <strong style="display:block;margin-bottom:2px">📌 Simplified model — for illustration only</strong>
       This panel is a directional compass, not a formal proof. It shows how write concern, read concern, and read preference collectively shift the durability/availability trade-off. MongoDB's actual behavior under network partition depends on topology, failure mode, and driver version. Use as a conversation anchor, not a specification.
     </div>
     <svg id="cap-svg" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#F0FDF4"/>
-          <stop offset="100%" stop-color="#EFF6FF"/>
+          <stop offset="0%" stop-color="#E3FCF7"/>
+          <stop offset="100%" stop-color="#F9EBFF"/>
         </linearGradient>
       </defs>
-      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="#CBD5E1" stroke-width="1.5"/>
+      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
       <polygon points="150,45 85,158 215,158" fill="rgba(0,104,74,0.06)" stroke="rgba(0,104,74,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">C</text>
-      <text x="150" y="21" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Lexend Deca,sans-serif">Consistency</text>
-      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#1E40AF" font-family="Lexend Deca,sans-serif">A</text>
-      <text x="10" y="194" text-anchor="start" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Availability</text>
-      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#7E22CE" font-family="Lexend Deca,sans-serif">P</text>
-      <text x="292" y="194" text-anchor="end" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Partition</text>
+      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">C</text>
+      <text x="150" y="21" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Consistency</text>
+      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#001E2B" font-family="Lexend Deca,sans-serif">A</text>
+      <text x="10" y="194" text-anchor="start" font-size="7" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Availability</text>
+      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#001E2B" font-family="Lexend Deca,sans-serif">P</text>
+      <text x="292" y="194" text-anchor="end" font-size="7" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Partition</text>
       <text x="150" y="128" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">MongoDB</text>
       <text x="150" y="139" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">Operating Zone</text>
       <circle id="cap-dot-ring" cx="185" cy="100" r="12" fill="none" stroke="rgba(0,104,74,0.3)" stroke-width="1.5">
@@ -403,7 +406,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
     <div>
       <div class="panel-title" style="margin-bottom:6px">C ↔ A Trade-off</div>
-      <div style="position:relative;height:18px;background:linear-gradient(to right,#DBEAFE,#FEF3C7,#DCFCE7);border-radius:4px;border:1px solid var(--border)">
+      <div style="position:relative;height:18px;background:linear-gradient(to right,var(--lavender),var(--offwhite),var(--mist));border-radius:4px;border:1px solid var(--border)">
         <div id="cap-slider-dot" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left .6s ease;left:75%"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">
@@ -414,9 +417,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <div>
       <div class="panel-title" style="margin-bottom:6px">Impact Metrics</div>
       <div class="mrow"><span class="mlbl">Consistency</span><div class="mtrk"><div class="mfil" id="m-consistency" style="background:var(--green);width:85%"></div></div><span class="mval" id="mv-consistency">High</span></div>
-      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--gcp);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
+      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--clearblue);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
       <div class="mrow"><span class="mlbl">Write Latency</span><div class="mtrk"><div class="mfil" id="m-latency" style="background:var(--warn);width:50%"></div></div><span class="mval" id="mv-latency">~10–30ms</span></div>
-      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:#7C3AED;width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
+      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:var(--slate);width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
     </div>
 
     <div>
@@ -474,11 +477,11 @@ const NODE_PROV_DEFAULTS = ['aws', 'aws', 'aws'];
 
 // ─── TAB 3 CONSTANTS ─────────────────────────────────────────────────────────
 
-// Per-shard colour palette: green / blue / pink
+// Per-shard accents from the Atlas Infinite visualizer palette.
 const MR_SC = [
-  { bright: '#00ED64', dark: '#00684A', border: '#001E2B', line: '#00684A', bg: '#DCFCE7', text: '#15803D' },
-  { bright: '#60A5FA', dark: '#1D4ED8', border: '#1E3A8A', line: '#1D4ED8', bg: '#DBEAFE', text: '#1D4ED8' },
-  { bright: '#FB7185', dark: '#BE185D', border: '#831843', line: '#BE185D', bg: '#FFE4E6', text: '#BE185D' },
+  { bright: '#00ED64', dark: '#00684A', border: '#001E2B', line: '#00684A', bg: '#E3FCF7', text: '#00684A' },
+  { bright: '#00D2FF', dark: '#006EFF', border: '#001E2B', line: '#006EFF', bg: '#F9EBFF', text: '#001E2B' },
+  { bright: '#E9FF99', dark: '#023430', border: '#001E2B', line: '#023430', bg: '#FAFBFC', text: '#023430' },
 ];
 
 const MR_CFGS = {
@@ -874,8 +877,8 @@ function rsRender() {
 
   let svg = `<svg viewBox="0 0 660 ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;display:block;margin:0 auto">
   <defs>
-    <pattern id="dotsRS" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrRS" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
+    <pattern id="dotsRS" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.08)"/></pattern>
+    <marker id="arrRS" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
     <marker id="arrRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#D4801A"/></marker>
   </defs>
   <rect width="660" height="${H}" fill="url(#dotsRS)" rx="8"/>`;
@@ -896,15 +899,15 @@ function rsRender() {
     const p     = PROV[box.provider];
     const rname = REGION_NAMES[box.ri][box.provider];
     const tag   = hadrTag(box.ri);
-    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="${p.bg}" stroke="${p.border}" stroke-width="1.5"/>`;
-    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="${p.color}"/>`;
-    svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="${p.color}"/>`;
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="10" fill="#FFFFFF" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>`;
+    svg += `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="26" rx="10" fill="#001E2B"/>`;
+    svg += `<rect x="${box.x}" y="${box.y + 16}" width="${box.w}" height="10" fill="#001E2B"/>`;
     svg += `<text x="${box.x + box.w/2}" y="${box.y + 17}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${p.label} · ${rname} · ${box.count} node${box.count > 1 ? 's' : ''}${tag}</text>`;
   });
 
   // Client Application box
-  svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
-  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  svg += `<rect x="240" y="8" width="180" height="26" rx="8" fill="#fff" stroke="#001E2B" stroke-width="1.5"/>
+  <text x="330" y="24" text-anchor="middle" font-size="10" fill="#001E2B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
 
   // Arrow client → primary (WRITES) or → surviving nodes (READ-ONLY)
   const readOnly = quorumCount < majority;
@@ -915,10 +918,10 @@ function rsRender() {
     if (pp) {
       const ax1 = 330, ay1 = 48, ax2 = pp.x, ay2 = pp.y - nodeSize * 0.6;
       const lx = ax1 + (ax2 - ax1) * 0.25, ly = ay1 + (ay2 - ay1) * 0.25;
-      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#FF6B35" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
-      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#FF6B35"/>`;
-      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#FFF4E6"/>`;
-      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+      svg += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#00684A" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#arrRS)"/>`;
+      svg += `<circle cx="${ax2}" cy="${ay2}" r="4" fill="#00684A"/>`;
+      arrowLabelSvg += `<rect x="${lx - 20}" y="${ly - 9}" width="40" height="14" rx="4" fill="#E3FCF7"/>`;
+      arrowLabelSvg += `<text x="${lx}" y="${ly + 1}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
     }
   } else if (readOnly) {
     nodes.filter(n => n.state === 'HEALTHY').forEach(n => {
@@ -937,7 +940,7 @@ function rsRender() {
     const pp = positions[primary.id];
     nodes.filter(n => n.id !== primary.id).forEach(n => {
       const np = positions[n.id]; if (!pp || !np) return;
-      svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="${n.state === 'HEALTHY' ? '#CBD5E1' : '#FCA5A5'}" stroke-width="1.5"/>`;
+      svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="${n.state === 'HEALTHY' ? 'rgba(0,30,43,.22)' : '#FCA5A5'}" stroke-width="1.5"/>`;
       if (n.state === 'HEALTHY')
         svg += `<line x1="${pp.x}" y1="${pp.y}" x2="${np.x}" y2="${np.y}" stroke="rgba(0,104,74,0.5)" stroke-width="2" class="repl"/>`;
     });
@@ -947,7 +950,7 @@ function rsRender() {
   for (let i = 0; i < secs.length - 1; i++) {
     const p1 = positions[secs[i].id], p2 = positions[secs[i + 1].id];
     if (p1 && p2)
-      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4" class="hb"/>`;
+      svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgba(0,30,43,.12)" stroke-width="1" stroke-dasharray="4 4" class="hb"/>`;
   }
 
   // Nodes
@@ -958,10 +961,10 @@ function rsRender() {
     if (isPri && !isDead) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="${nodeSize * 0.75}" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
     svg += mdbNodeIcon(pos.x, pos.y, nodeSize, n.state, n.role);
     const lblY = pos.y + nodeSize * 0.83;
-    svg += `<text x="${pos.x}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="#64748B" font-family="Lexend Deca,sans-serif">${n.host}</text>`;
+    svg += `<text x="${pos.x}" y="${lblY}" text-anchor="middle" font-size="8.5" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">${n.host}</text>`;
     const isRO = readOnly && !isDead && !isPri;
-    const bc = isDead ? '#FEE2E2' : isPri ? '#DCFCE7' : isRO ? '#FEF3C7' : '#DBEAFE';
-    const tc = isDead ? '#991B1B' : isPri ? '#166534' : isRO ? '#92400E' : '#1E40AF';
+    const bc = isDead ? '#FEE2E2' : isPri ? '#E3FCF7' : isRO ? '#FEF3C7' : '#F9EBFF';
+    const tc = isDead ? '#991B1B' : isPri ? '#00684A' : isRO ? '#92400E' : '#001E2B';
     const lbl = isDead ? 'DOWN' : isVoting ? 'VOTING…' : isRO ? 'READ-ONLY' : n.role;
     svg += `<rect x="${pos.x - 26}" y="${lblY + 5}" width="52" height="15" rx="7" fill="${bc}"/>`;
     svg += `<text x="${pos.x}" y="${lblY + 15}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${lbl}</text>`;
@@ -979,8 +982,8 @@ function rsRender() {
   // Quorum status bar
   const electing = S.rs.electing;
   const quorumOk = quorumCount >= majority;
-  const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#166534' : '#92400E';
-  const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#DCFCE7' : '#FEF3C7';
+  const stColor  = healthy === 0 ? '#7F1D1D' : quorumOk ? '#00684A' : '#92400E';
+  const stBg     = healthy === 0 ? '#FEE2E2' : quorumOk ? '#E3FCF7' : '#FEF3C7';
   const stMsg    = electing
     ? `⚡ Election in progress — ${quorumCount}/${nodes.length} nodes voting · ${majority} required · driver holding writes`
     : healthy === 0
@@ -1141,17 +1144,17 @@ function wcRender() {
 
   let svg = `<svg viewBox="0 0 580 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`;
   svg += `<defs>
-    <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF6B35"/></marker>
-    <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#22C55E"/></marker>
-    <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+    <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.12)"/></pattern>
+    <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#006EFF"/></marker>
     <marker id="arrOL" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="rgba(0,104,74,0.65)"/></marker>
   </defs>`;
   svg += `<rect width="580" height="400" fill="url(#dots2)" rx="8"/>`;
 
   // CLIENT APP
-  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
-    <text x="290" y="28" text-anchor="middle" font-size="10" fill="#64748B" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
+    <text x="290" y="28" text-anchor="middle" font-size="10" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
 
   // ── WRITE PATH: App → Primary ──
   // When read also targets primary (readTarget===0), fan arrows apart to avoid label overlap
@@ -1162,37 +1165,37 @@ function wcRender() {
 
   if (acksNeeded === 0) {
     // w:0 fire-and-forget — grey dashed, no ACK back
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#F1F5F9" stroke="#CBD5E1"/>`;
-    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="rgba(0,30,43,.54)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#FAFBFC" stroke="rgba(0,30,43,.22)"/>`;
+    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
   } else {
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#FF6B35" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
+    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#00684A" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
     const wLabelX = sameTarget ? 330 : 315;
     const wLabelY = sameTarget ? 80 : 88;
-    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#FFF4E6"/>`;
-    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#C2410C" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
     // ACK back from Primary to App
     const ackEndX  = sameTarget ? wX1 + 4 : wX1 - 12;
-    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
+    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#00684A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
     const ackLabelX = sameTarget ? 336 : 262;
     const ackLabelY = sameTarget ? 100 : 87;
-    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#F0FDF4"/>`;
-    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">ACK</text>`;
+    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">ACK</text>`;
   }
 
   // ── REPLICATION LINES: Primary → Secondaries ──
   for (let i = 1; i <= 2; i++) {
     const sec = npos[i];
     const needsAck = acksNeeded > i;
-    const color = needsAck ? 'rgba(0,104,74,0.6)' : '#CBD5E1';
+    const color = needsAck ? 'rgba(0,104,74,0.6)' : 'rgba(0,30,43,.22)';
     const sw    = needsAck ? 2 : 1.5;
     const cls   = needsAck ? 'class="repl"' : 'stroke-dasharray="4 4"';
     svg += `<line x1="${pri.x}" y1="${pri.y}" x2="${sec.x}" y2="${sec.y - 28}" stroke="${color}" stroke-width="${sw}" ${cls} ${needsAck ? 'marker-end="url(#arrOL)"' : ''}/>`;
     const mx = (pri.x + sec.x) / 2 + (i === 1 ? -14 : 8);
     const my = (pri.y + sec.y - 28) / 2 - 4;
     if (needsAck) {
-      svg += `<rect x="${mx - 16}" y="${my - 8}" width="32" height="13" rx="3" fill="#F0FDF4"/>`;
-      svg += `<text x="${mx}" y="${my + 1}" text-anchor="middle" font-size="8" fill="#166534" font-family="Lexend Deca,sans-serif">oplog</text>`;
+      svg += `<rect x="${mx - 16}" y="${my - 8}" width="32" height="13" rx="3" fill="#E3FCF7"/>`;
+      svg += `<text x="${mx}" y="${my + 1}" text-anchor="middle" font-size="8" fill="#00684A" font-family="Lexend Deca,sans-serif">oplog</text>`;
     }
   }
 
@@ -1201,11 +1204,11 @@ function wcRender() {
   const rt   = npos[readTarget];
   const rdX1 = sameTarget ? 270 : 278;
   const rdX2 = sameTarget ? (pri.x - 10) : rt.x + (readTarget === 1 ? 12 : (readTarget === 2 ? -12 : 3));
-  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#3B82F6" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
+  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#006EFF" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
   const rlx = sameTarget ? 245 : ((rdX1 + rdX2) / 2 + (readTarget === 1 ? -18 : readTarget === 2 ? 12 : 8));
   const rly = sameTarget ? 88  : (56 + rt.y - 28) / 2;
-  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#EFF6FF" stroke="#BFDBFE"/>`;
-  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#1D4ED8" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
+  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#F9EBFF" stroke="rgba(0,30,43,.22)"/>`;
+  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#001E2B" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
 
   // ── NODES ──
   npos.forEach((pos, i) => {
@@ -1215,29 +1218,29 @@ function wcRender() {
     svg += `<g>`;
     if (isPri) svg += `<circle cx="${pos.x}" cy="${pos.y}" r="36" fill="none" stroke="rgba(0,237,100,0.3)" stroke-width="1.5" class="pring"/>`;
     svg += mdbNodeIcon(pos.x, pos.y, 54, null, pos.role);
-    svg += `<text x="${pos.x}" y="${pos.y + 42}" text-anchor="middle" font-size="9" fill="#64748B" font-family="Lexend Deca,sans-serif">${pos.id}:27017</text>`;
-    const bc = isPri ? '#DCFCE7' : '#DBEAFE', tc = isPri ? '#166534' : '#1E40AF';
+    svg += `<text x="${pos.x}" y="${pos.y + 42}" text-anchor="middle" font-size="9" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">${pos.id}:27017</text>`;
+    const bc = isPri ? '#E3FCF7' : '#F9EBFF', tc = isPri ? '#00684A' : '#001E2B';
     svg += `<rect x="${pos.x - 28}" y="${pos.y + 49}" width="56" height="16" rx="8" fill="${bc}"/>`;
     svg += `<text x="${pos.x}" y="${pos.y + 60}" text-anchor="middle" font-size="9" font-weight="700" fill="${tc}" font-family="Lexend Deca,sans-serif">${pos.role}</text>`;
     if (hasAck) {
-      svg += `<circle cx="${pos.x + 25}" cy="${pos.y - 25}" r="10" fill="#22C55E" stroke="#fff" stroke-width="2"/>`;
+      svg += `<circle cx="${pos.x + 25}" cy="${pos.y - 25}" r="10" fill="#00684A" stroke="#fff" stroke-width="2"/>`;
       svg += `<text x="${pos.x + 25}" y="${pos.y - 20}" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">✓</text>`;
     }
     if (isReadTgt) {
-      svg += `<circle cx="${pos.x - 25}" cy="${pos.y - 25}" r="10" fill="#3B82F6" stroke="#fff" stroke-width="2"/>`;
+      svg += `<circle cx="${pos.x - 25}" cy="${pos.y - 25}" r="10" fill="#006EFF" stroke="#fff" stroke-width="2"/>`;
       svg += `<text x="${pos.x - 25}" y="${pos.y - 20}" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">R</text>`;
     }
     svg += `</g>`;
   });
 
   // ── CORNER PILLS: journal + readConcern ──
-  svg += `<rect x="6" y="6" width="86" height="28" rx="6" fill="${j ? '#F0FDF4' : '#F8FAFC'}" stroke="${j ? '#86EFAC' : '#E2E8F0'}" stroke-width="1"/>`;
-  svg += `<text x="49" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">j: ${j ? 'true' : 'false'}</text>`;
-  svg += `<text x="49" y="28" text-anchor="middle" font-size="7.5" fill="${j ? '#166534' : '#94A3B8'}" font-family="Lexend Deca,sans-serif">${j ? 'disk journal ✓' : 'memory only'}</text>`;
+  svg += `<rect x="6" y="6" width="86" height="28" rx="6" fill="${j ? '#E3FCF7' : '#FAFBFC'}" stroke="${j ? 'rgba(0,104,74,.3)' : 'rgba(0,30,43,.12)'}" stroke-width="1"/>`;
+  svg += `<text x="49" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${j ? '#00684A' : 'rgba(0,30,43,.54)'}" font-family="Lexend Deca,sans-serif">j: ${j ? 'true' : 'false'}</text>`;
+  svg += `<text x="49" y="28" text-anchor="middle" font-size="7.5" fill="${j ? '#00684A' : 'rgba(0,30,43,.54)'}" font-family="Lexend Deca,sans-serif">${j ? 'disk journal ✓' : 'memory only'}</text>`;
 
-  const rcColor = rc === 'linearizable' ? '#7C3AED' : rc === 'majority' ? '#166534' : rc === 'snapshot' ? '#0369A1' : '#92400E';
-  const rcBg    = rc === 'linearizable' ? '#EDE9FE' : rc === 'majority' ? '#F0FDF4' : rc === 'snapshot' ? '#E0F2FE' : '#FFF7ED';
-  const rcBdr   = rc === 'linearizable' ? '#C4B5FD' : rc === 'majority' ? '#86EFAC' : rc === 'snapshot' ? '#7DD3FC' : '#FED7AA';
+  const rcColor = rc === 'linearizable' ? '#001E2B' : rc === 'majority' ? '#00684A' : rc === 'snapshot' ? '#006EFF' : '#001E2B';
+  const rcBg    = rc === 'linearizable' ? '#F9EBFF' : rc === 'majority' ? '#E3FCF7' : rc === 'snapshot' ? '#F9EBFF' : '#FAFBFC';
+  const rcBdr   = rc === 'linearizable' ? 'rgba(0,30,43,.22)' : rc === 'majority' ? 'rgba(0,104,74,.3)' : rc === 'snapshot' ? 'rgba(0,30,43,.22)' : 'rgba(0,30,43,.22)';
   svg += `<rect x="488" y="6" width="86" height="28" rx="6" fill="${rcBg}" stroke="${rcBdr}" stroke-width="1"/>`;
   svg += `<text x="531" y="17" text-anchor="middle" font-size="8.5" font-weight="700" fill="${rcColor}" font-family="Lexend Deca,sans-serif">rc: ${rc}</text>`;
   svg += `<text x="531" y="28" text-anchor="middle" font-size="7.5" fill="${rcColor}" font-family="Lexend Deca,sans-serif">${rc === 'majority' ? 'committed ✓' : rc === 'linearizable' ? 'linearizable' : rc === 'snapshot' ? 'snapshot' : 'local state'}</text>`;
@@ -1497,11 +1500,11 @@ function mrCompleteElection(si) {
 function mrArrow(ax1, ay1, ax2, ay2, si, curved) {
   const st     = mrShardStatus(si);
   const ro     = st.readOnly || st.down;
-  const stroke = ro ? '#3B82F6' : '#FF9900';
+  const stroke = ro ? '#006EFF' : '#00684A';
   const marker = ro ? 'url(#arrMRRO)' : 'url(#arrMRO)';
   const lbl    = st.down ? null : ro ? 'READ-ONLY' : 'WRITES';
-  const lbg    = ro ? '#EFF6FF'  : '#FFF4E6';
-  const ltx    = ro ? '#1E3A8A'  : '#C2410C';
+  const lbg    = ro ? '#F9EBFF' : '#E3FCF7';
+  const ltx    = ro ? '#001E2B' : '#00684A';
 
   let out = '';
   if (curved) {
@@ -1602,18 +1605,18 @@ function mrRender() {
 
   let svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
   <defs>
-    <pattern id="dotsMR" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#E2E8F0"/></pattern>
-    <marker id="arrMRO"  markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#FF9900"/></marker>
-    <marker id="arrMRRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#3B82F6"/></marker>
+    <pattern id="dotsMR" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.08)"/></pattern>
+    <marker id="arrMRO"  markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrMRRO" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#006EFF"/></marker>
   </defs>
   <rect width="${SVG_W}" height="${SVG_H}" fill="url(#dotsMR)" rx="8"/>`;
 
   // ── Region column backgrounds ──────────────────────────────────────────────
   cfg.regions.forEach((reg, ri) => {
     const x = cX(ri), w = colW, allDn = mrRegionAllDown(ri);
-    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${SVG_H - legendH - 6 - topOffset}" rx="10" fill="${allDn ? '#FEF2F2' : '#FFFDF7'}" stroke="${allDn ? '#FCA5A5' : '#FFD08A'}" stroke-width="${allDn ? 2 : 1.5}"/>`;
-    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${hdrH}" rx="10" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
-    svg += `<rect x="${x}" y="${topOffset + hdrH - 8}" width="${w}" height="8" fill="${allDn ? '#EF4444' : '#FF9900'}"/>`;
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${SVG_H - legendH - 6 - topOffset}" rx="10" fill="${allDn ? '#FEF2F2' : '#FFFFFF'}" stroke="${allDn ? '#FCA5A5' : 'rgba(0,30,43,.22)'}" stroke-width="${allDn ? 2 : 1.5}"/>`;
+    svg += `<rect x="${x}" y="${topOffset}" width="${w}" height="${hdrH}" rx="10" fill="${allDn ? '#C0392B' : '#001E2B'}"/>`;
+    svg += `<rect x="${x}" y="${topOffset + hdrH - 8}" width="${w}" height="8" fill="${allDn ? '#C0392B' : '#001E2B'}"/>`;
     svg += `<text x="${cCX(ri)}" y="${topOffset + 15}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="Lexend Deca,sans-serif">${reg.name}</text>`;
     svg += `<text x="${cCX(ri)}" y="${topOffset + 27}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.9)" font-family="Lexend Deca,sans-serif">${reg.short}</text>`;
     if (allDn) {
@@ -1627,10 +1630,10 @@ function mrRender() {
   if (is1B) {
     // External backend above the region cards — communicates mongos routing
     const ebW = 220, ebX = SVG_W / 2 - 110, ebY = 8, ebH = 58;
-    svg += `<rect x="${ebX}" y="${ebY}" width="${ebW}" height="${ebH}" rx="8" fill="#fff" stroke="#FFD08A" stroke-width="1.5"/>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 13}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">APPLICATION BACKEND</text>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 27}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
-    svg += `<text x="${SVG_W / 2}" y="${ebY + 42}" text-anchor="middle" font-size="8" fill="#92400E" font-family="Lexend Deca,sans-serif">mongos routes writes → each shard's Primary</text>`;
+    svg += `<rect x="${ebX}" y="${ebY}" width="${ebW}" height="${ebH}" rx="8" fill="#fff" stroke="#001E2B" stroke-width="1.5"/>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 13}" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">APPLICATION BACKEND</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 27}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+    svg += `<text x="${SVG_W / 2}" y="${ebY + 42}" text-anchor="middle" font-size="8" fill="#001E2B" font-family="Lexend Deca,sans-serif">mongos routes writes → each shard's Primary</text>`;
 
     const srcX = SVG_W / 2, srcY = ebY + ebH;
     // Count targets per x-column for spread offset when 2 shards land on same column post-failover
@@ -1651,10 +1654,10 @@ function mrRender() {
       if (mrRegionAllDown(ri)) return;
       if (!cfg.backends.includes(ri)) return;
       const cx = cCX(ri), bw = Math.min(colW - 18, 110), bx = cx - bw / 2;
-      svg += `<rect x="${bx}" y="${backY}" width="${bw}" height="${backH}" rx="7" fill="#fff" stroke="#FFD08A" stroke-width="1.3"/>`;
-      svg += `<text x="${cx}" y="${backY + 12}" text-anchor="middle" font-size="8" fill="#94A3B8" font-family="Lexend Deca,sans-serif">BACKEND</text>`;
-      svg += `<text x="${cx}" y="${backY + 24}" text-anchor="middle" font-size="9" font-weight="600" fill="#D4801A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
-      svg += `<text x="${cx}" y="${backY + 36}" text-anchor="middle" font-size="7.5" fill="#92400E" font-family="Lexend Deca,sans-serif">local reads &amp; writes</text>`;
+      svg += `<rect x="${bx}" y="${backY}" width="${bw}" height="${backH}" rx="7" fill="#fff" stroke="#001E2B" stroke-width="1.3"/>`;
+      svg += `<text x="${cx}" y="${backY + 12}" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">BACKEND</text>`;
+      svg += `<text x="${cx}" y="${backY + 24}" text-anchor="middle" font-size="9" font-weight="600" fill="#00684A" font-family="Lexend Deca,sans-serif">MongoDB Driver</text>`;
+      svg += `<text x="${cx}" y="${backY + 36}" text-anchor="middle" font-size="7.5" fill="#001E2B" font-family="Lexend Deca,sans-serif">local reads &amp; writes</text>`;
       // Only draw arrow when this region's home shard has a live PRIMARY here (no fallback)
       const homeSi   = cfg.primaryRegion.indexOf(ri);
       if (homeSi < 0) return;
@@ -1678,7 +1681,7 @@ function mrRender() {
       if (voting)        svg += `<circle cx="${x}" cy="${y}" r="${ns * 0.75}" fill="none" stroke="#F59E0B"   stroke-width="1.5" class="pring" opacity="0.5"/>`;
       svg += mrNodeSVG(x, y, si, role, dn, voting);
       const lblY    = y + ns * 0.50;
-      const pillBg  = dn ? '#EF4444' : voting ? '#F59E0B' : isPri ? sc.border : '#E2E8F0';
+      const pillBg  = dn ? '#EF4444' : voting ? '#F59E0B' : isPri ? sc.border : '#F9EBFF';
       const pillTx  = dn || voting || isPri ? '#fff' : sc.text;
       const pillTxt = dn ? 'DOWN' : voting ? 'VOTING…' : role;
       svg += `<rect x="${x - 30}" y="${lblY}" width="60" height="14" rx="6" fill="${pillBg}"/>`;
@@ -1700,7 +1703,7 @@ function mrRender() {
     const dotFill   = electing ? '#FCD34D' : sc.bright;
     const dotBorder = electing ? '#D97706' : sc.border;
     const nameColor = electing ? '#92400E' : sc.border;
-    const stC = electing ? '#D97706' : st.down ? '#6B7280' : st.readOnly ? '#DC2626' : '#16A34A';
+    const stC = electing ? '#D97706' : st.down ? 'rgba(0,30,43,.54)' : st.readOnly ? '#DC2626' : '#00684A';
     const stT = electing ? '⚡ Electing…' : st.down ? '⊘ Unavailable' : st.readOnly ? '⚠ READ-ONLY' : '✓ Writable';
     svg += `<circle cx="${ox + 5}" cy="${legY + 13}" r="5" fill="${dotFill}" stroke="${dotBorder}" stroke-width="1.2"/>`;
     svg += `<text x="${ox + 14}" y="${legY + 17}" font-size="9" font-weight="600" fill="${nameColor}" font-family="Lexend Deca,sans-serif">Shard ${si + 1}</text>`;

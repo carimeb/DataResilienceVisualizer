@@ -4,56 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MongoDB Distributed Architecture & CAP Theorem Visualizer</title>
+<link rel="icon" type="image/svg+xml" sizes="any" href="assets/mongodb-leaf-black.svg">
 <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#00684A;--green-light:#00ED64;--green-bg:#E8F5EE;
-  --bg:#FFFFFF;--bg1:#F0F4F8;--bg2:#F8FAFB;--bg3:#EEF2F6;
-  --border:#D8E2EC;--border2:#C5D4E0;
-  --text:#1A2B3C;--text2:#4A6070;--text3:#7A9AAA;
-  --pri-node:#00684A;--sec-node:#334E68;--dead-node:#C0392B;
+  --slate:#001E2B;--white:#FFFFFF;--spring:#00ED64;--forest:#00684A;--evergreen:#023430;--offwhite:#FAFBFC;
+  --lavender:#F9EBFF;--mist:#E3FCF7;--clearblue:#006EFF;--sky:#00D2FF;--lime:#E9FF99;
+  --green:var(--forest);--green-light:var(--spring);--green-bg:var(--mist);
+  --bg:var(--white);--bg1:var(--offwhite);--bg2:var(--offwhite);--bg3:rgba(0,30,43,.05);
+  --border:rgba(0,30,43,.12);--border2:rgba(0,30,43,.22);
+  --text:var(--slate);--text2:rgba(0,30,43,.74);--text3:rgba(0,30,43,.54);
+  --pri-node:var(--forest);--sec-node:var(--slate);--dead-node:#C0392B;
   --dead-bg:#FDF0EE;
   --warn:#D4801A;--warn-bg:#FEF3E2;
   --aws:#FF9900;--aws-bg:#FFF4E6;--aws-border:#FFD08A;
   --gcp:#4285F4;--gcp-bg:#EAF1FF;--gcp-border:#A8C4F8;
   --azure:#0078D4;--azure-bg:#E5F1FB;--azure-border:#90C4EE;
-  --mdb-dark:#001E2B;
-  --shadow:0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.07);
+  --mdb-dark:var(--slate);
+  --shadow:0 1px 4px rgba(0,30,43,.08),0 4px 16px rgba(0,30,43,.06);
+  --shadow-sm:0 1px 3px rgba(0,30,43,.07);
 }
 body{font-family:'Lexend Deca',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:12px}
 
 /* HEADER */
-#hdr{background:var(--mdb-dark);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.logo{font-size:16px;font-weight:700;color:var(--green-light);display:flex;align-items:center;gap:6px}
-.logo svg{width:20px;height:20px}
-.hdr-sub{font-size:12px;color:var(--green-light);flex:1}
-.hdr-badge{background:rgba(0,237,100,0.15);color:var(--green-light);border:1px solid rgba(0,237,100,0.35);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+#hdr{background:var(--slate);padding:9px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.logo{display:flex;align-items:center;flex-shrink:0}
+.logo img{height:22px;width:auto;display:block}
+.hdr-sub{font-size:14px;color:var(--white);font-weight:600;flex:1;min-width:240px}
+.hdr-disclaimer{font-size:10.5px;color:rgba(255,255,255,.6);font-weight:400;margin-left:8px}
+.hdr-badge{background:rgba(249,235,255,.12);color:var(--lavender);border:1px solid rgba(249,235,255,.4);border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 
 /* TABS */
-#tab-nav{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
+#tab-nav{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;overflow-x:auto}
 .tab-btn{padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--text3);font-size:12px;font-weight:500;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
 .tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--green);border-bottom-color:var(--green);font-weight:700}
+.tab-btn.active{color:var(--slate);border-bottom-color:var(--spring);font-weight:700}
 
 /* MAIN */
 #main{flex:1;display:grid;grid-template-columns:1fr;overflow:hidden;transition:grid-template-columns .3s ease}
 #main.cap-visible{grid-template-columns:1fr 300px}
 #viz{overflow-y:auto;padding:16px;background:var(--bg1)}
-#cap{background:#fff;overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
+#cap{background:var(--white);overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:12px;border-left:1px solid var(--border)}
 #cap.cap-visible{display:flex}
 /* CAP toggle button */
-#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,0.12);color:var(--green-light);border:1px solid rgba(0,237,100,0.3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
-#cap-toggle-btn:hover{background:rgba(0,237,100,0.22);border-color:rgba(0,237,100,0.55)}
-#cap-toggle-btn.active{background:rgba(0,237,100,0.25);border-color:var(--green-light)}
+#cap-toggle-btn{margin-left:auto;background:rgba(0,237,100,.12);color:var(--spring);border:1px solid rgba(0,237,100,.35);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s,border-color .2s;letter-spacing:.3px}
+#cap-toggle-btn:hover{background:rgba(0,237,100,.22);border-color:var(--spring)}
+#cap-toggle-btn.active{background:var(--spring);border-color:var(--spring);color:var(--slate)}
 .panel-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700}
 
 /* LOG */
-#log{height:90px;background:#F0F4F8;border-top:2px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
-.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid #DDE6EE;animation:fi .2s ease}
+#log{height:90px;background:var(--offwhite);border-top:1px solid var(--border);overflow-y:auto;padding:5px 14px;font-family:'SF Mono','Consolas',monospace;font-size:11px;flex-shrink:0}
+.lr{display:grid;grid-template-columns:72px 56px 90px 1fr;gap:8px;padding:1.5px 0;border-bottom:1px solid var(--border);animation:fi .2s ease}
 @keyframes fi{from{opacity:0}to{opacity:1}}
-.lt{color:#7A9AAA}.li{color:#2563EB}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--green)}.lc{color:#5580A0}.lm{color:var(--text2)}
+.lt{color:var(--text3)}.li{color:var(--slate)}.lw{color:var(--warn)}.le{color:var(--dead-node)}.ls{color:var(--forest)}.lc{color:var(--forest)}.lm{color:var(--text2)}
 
 /* TABS VISIBILITY */
 .tc{display:none}.tc.active{display:block}
@@ -70,7 +74,7 @@ select{background:#fff;border:1px solid var(--border2);color:var(--text);padding
 select:focus{outline:none;border-color:var(--green)}
 
 .btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;font-family:'Lexend Deca',sans-serif;cursor:pointer;transition:all .2s;border:none}
-.btn-p{background:var(--green);color:#fff}.btn-p:hover{background:#004F38}
+.btn-p{background:var(--forest);color:var(--white)}.btn-p:hover{background:var(--evergreen)}
 .btn-g{background:#fff;border:1.5px solid var(--green);color:var(--green)}.btn-g:hover{background:var(--green-bg)}
 .btn-d{background:#fff;border:1.5px solid var(--dead-node);color:var(--dead-node)}.btn-d:hover{background:var(--dead-bg)}
 .btn-r{background:var(--dead-node);color:#fff}.btn-r:hover{background:#B91C1C}
@@ -80,8 +84,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 /* BADGES */
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase}
-.b-p{background:#DCFCE7;color:#166534}
-.b-s{background:#DBEAFE;color:#1E40AF}
+.b-p{background:var(--mist);color:var(--forest)}
+.b-s{background:var(--lavender);color:var(--slate)}
 .b-d{background:#FEE2E2;color:#991B1B}
 .b-w{background:#FEF3C7;color:#92400E}
 
@@ -104,8 +108,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .ld{width:11px;height:11px;border-radius:50%;display:inline-block}
 
 /* INSTRUCTIONS */
-.tip{background:#EAF4FF;border:1px solid #B6D9F7;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E4070;line-height:1.7;margin-bottom:12px}
-.tip strong{color:#1558A8;font-weight:700}
+.tip{background:var(--mist);border:1px solid rgba(0,104,74,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--evergreen);line-height:1.7;margin-bottom:12px}
+.tip strong{color:var(--slate);font-weight:700}
 
 /* INFO TABLE */
 .itbl{width:100%}
@@ -123,9 +127,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 /* CAP */
 #cap-svg{width:100%}
 .cap-mode{padding:7px 10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700}
-.cm-cp{background:#DCFCE7;color:#14532D;border:1px solid #86EFAC}
-.cm-ap{background:#DBEAFE;color:#1E3A8A;border:1px solid #93C5FD}
-.cm-bal{background:#FEF3C7;color:#78350F;border:1px solid #FCD34D}
+.cm-cp{background:var(--mist);color:var(--forest);border:1px solid rgba(0,104,74,.35)}
+.cm-ap{background:var(--lavender);color:var(--slate);border:1px solid rgba(0,30,43,.25)}
+.cm-bal{background:var(--offwhite);color:var(--slate);border:1px solid var(--border2)}
 .cap-desc{font-size:12px;color:var(--text2);line-height:1.65}
 .cap-hl{color:var(--green);font-weight:600}
 
@@ -136,7 +140,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .elex-timer{font-size:22px;font-weight:800;font-family:monospace;color:#D97706;float:right}
 
 /* READ-ONLY / DOWNTIME BANNERS */
-#ro-banner{display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:12px;line-height:1.6}
+#ro-banner{display:none;background:var(--lavender);border:1.5px solid rgba(0,30,43,.35);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--slate);margin-bottom:12px;line-height:1.6}
 #ro-banner.show{display:block}
 #down-banner{display:none;background:#FEF2F2;border:1.5px solid #EF4444;border-radius:8px;padding:10px 14px;font-size:12px;color:#7F1D1D;margin-bottom:12px;line-height:1.6}
 #down-banner.show{display:block}
@@ -159,10 +163,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <div id="hdr">
   <div class="logo">
-    <svg viewBox="0 0 20 20" fill="none"><path d="M10 1.5C10 1.5 4.5 6.5 4.5 11.5C4.5 14.8 6.9 17.5 10 17.5C13.1 17.5 15.5 14.8 15.5 11.5C15.5 6.5 10 1.5 10 1.5Z" fill="#00ED64"/><line x1="10" y1="1.5" x2="10" y2="17.5" stroke="#001E2B" stroke-width="1.2"/></svg>
-    MongoDB
+    <img src="assets/mongodb-logo-spring-green.svg" alt="MongoDB">
   </div>
-  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span style="font-size:10px;opacity:0.55;margin-left:8px">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
+  <div class="hdr-sub">Distributed Architecture &amp; Read/Write Concerns Visualizer <span class="hdr-disclaimer">· For educational purposes only — not a substitute for official MongoDB documentation.</span></div>
   <div class="hdr-badge">Interactive</div>
   <button id="cap-toggle-btn" onclick="toggleCAPPanel()" title="Show/hide CAP Theorem positioning panel">⬡ CAP Positioning</button>
 </div>
@@ -221,7 +224,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
               </select>
             </label>
             <div id="rs-region-providers"></div>
-            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;font-size:11px;color:#166534;line-height:1.5"></div>
+            <div id="rs-quorum-info" style="margin-top:8px;padding:7px 10px;background:var(--mist);border:1px solid rgba(0,104,74,.35);border-radius:6px;font-size:11px;color:var(--evergreen);line-height:1.5"></div>
           </div>
           <div class="card">
             <div class="card-title">Write &amp; Read Concerns</div>
@@ -320,7 +323,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
         <div class="elex-title">⏳ Election in progress — <span id="mr-elex-label"></span> <span class="elex-timer" id="mr-elex-count"></span>s</div>
         <div>The MongoDB driver is <strong>automatically holding and retrying all incoming operations</strong>. No writes will be lost. Once a new Primary is elected, operations resume transparently.</div>
       </div>
-      <div id="mr-ro-banner" style="display:none;background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E3A8A;margin-bottom:10px;line-height:1.6">
+      <div id="mr-ro-banner" style="display:none;background:var(--lavender);border:1.5px solid rgba(0,30,43,.35);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--slate);margin-bottom:10px;line-height:1.6">
         <div class="ro-title" id="mr-ro-title">📖 Shard in READ-ONLY mode</div>
         <div>This shard has fallen below majority quorum. <strong>Reads are still served normally.</strong> Writes resume automatically once majority is restored.</div>
       </div>
@@ -368,25 +371,25 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <!-- CAP PANEL -->
   <div id="cap">
     <div class="panel-title">CAP Theorem Position</div>
-    <div style="background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;padding:7px 10px;font-size:10.5px;color:#713F12;line-height:1.6;margin-bottom:8px">
+    <div style="background:var(--mist);border:1px solid rgba(0,104,74,.3);border-radius:6px;padding:7px 10px;font-size:10.5px;color:var(--evergreen);line-height:1.6;margin-bottom:8px">
       <strong style="display:block;margin-bottom:2px">📌 Simplified model — for illustration only</strong>
       This panel is a directional compass, not a formal proof. It shows how write concern, read concern, and read preference collectively shift the durability/availability trade-off. MongoDB's actual behavior under network partition depends on topology, failure mode, and driver version. Use as a conversation anchor, not a specification.
     </div>
     <svg id="cap-svg" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#F0FDF4"/>
-          <stop offset="100%" stop-color="#EFF6FF"/>
+          <stop offset="0%" stop-color="#E3FCF7"/>
+          <stop offset="100%" stop-color="#F9EBFF"/>
         </linearGradient>
       </defs>
-      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="#CBD5E1" stroke-width="1.5"/>
+      <polygon points="150,12 18,180 282,180" fill="url(#triGrad)" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
       <polygon points="150,45 85,158 215,158" fill="rgba(0,104,74,0.06)" stroke="rgba(0,104,74,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" font-family="Lexend Deca,sans-serif">C</text>
-      <text x="150" y="21" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Lexend Deca,sans-serif">Consistency</text>
-      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#1E40AF" font-family="Lexend Deca,sans-serif">A</text>
-      <text x="10" y="194" text-anchor="start" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Availability</text>
-      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#7E22CE" font-family="Lexend Deca,sans-serif">P</text>
-      <text x="292" y="194" text-anchor="end" font-size="7" fill="#6B7280" font-family="Lexend Deca,sans-serif">Partition</text>
+      <text x="150" y="9" text-anchor="middle" font-size="11" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">C</text>
+      <text x="150" y="21" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Consistency</text>
+      <text x="8" y="184" text-anchor="start" font-size="11" font-weight="700" fill="#001E2B" font-family="Lexend Deca,sans-serif">A</text>
+      <text x="10" y="194" text-anchor="start" font-size="7" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Availability</text>
+      <text x="292" y="184" text-anchor="end" font-size="11" font-weight="700" fill="#001E2B" font-family="Lexend Deca,sans-serif">P</text>
+      <text x="292" y="194" text-anchor="end" font-size="7" fill="rgba(0,30,43,.6)" font-family="Lexend Deca,sans-serif">Partition</text>
       <text x="150" y="128" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">MongoDB</text>
       <text x="150" y="139" text-anchor="middle" font-size="8" fill="rgba(0,104,74,0.45)" font-family="Lexend Deca,sans-serif">Operating Zone</text>
       <circle id="cap-dot-ring" cx="185" cy="100" r="12" fill="none" stroke="rgba(0,104,74,0.3)" stroke-width="1.5">
@@ -403,7 +406,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
     <div>
       <div class="panel-title" style="margin-bottom:6px">C ↔ A Trade-off</div>
-      <div style="position:relative;height:18px;background:linear-gradient(to right,#DBEAFE,#FEF3C7,#DCFCE7);border-radius:4px;border:1px solid var(--border)">
+      <div style="position:relative;height:18px;background:linear-gradient(to right,var(--lavender),var(--offwhite),var(--mist));border-radius:4px;border:1px solid var(--border)">
         <div id="cap-slider-dot" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left .6s ease;left:75%"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">
@@ -414,9 +417,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <div>
       <div class="panel-title" style="margin-bottom:6px">Impact Metrics</div>
       <div class="mrow"><span class="mlbl">Consistency</span><div class="mtrk"><div class="mfil" id="m-consistency" style="background:var(--green);width:85%"></div></div><span class="mval" id="mv-consistency">High</span></div>
-      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--gcp);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
+      <div class="mrow"><span class="mlbl">Availability</span><div class="mtrk"><div class="mfil" id="m-availability" style="background:var(--clearblue);width:50%"></div></div><span class="mval" id="mv-availability">Medium</span></div>
       <div class="mrow"><span class="mlbl">Write Latency</span><div class="mtrk"><div class="mfil" id="m-latency" style="background:var(--warn);width:50%"></div></div><span class="mval" id="mv-latency">~10–30ms</span></div>
-      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:#7C3AED;width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
+      <div class="mrow"><span class="mlbl">Durability</span><div class="mtrk"><div class="mfil" id="m-durability" style="background:var(--slate);width:80%"></div></div><span class="mval" id="mv-durability">High</span></div>
     </div>
 
     <div>
