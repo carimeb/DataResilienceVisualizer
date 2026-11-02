@@ -1135,52 +1135,47 @@ function wcRender() {
 
   // Node layout: PRIMARY top-center, two secondaries bottom
   const npos = [
-    { x: 290, y: 170, role: 'PRIMARY',   id: 'rs0' },
-    { x: 100, y: 320, role: 'SECONDARY', id: 'rs1' },
-    { x: 480, y: 320, role: 'SECONDARY', id: 'rs2' },
+    { x: 290, y: 160, role: 'PRIMARY',   id: 'rs0' },
+    { x: 140, y: 270, role: 'SECONDARY', id: 'rs1' },
+    { x: 440, y: 270, role: 'SECONDARY', id: 'rs2' },
   ];
   const readTarget = rp === 'secondary' || rp === 'secondaryPreferred' ? 1
                    : rp === 'nearest' ? 2 : 0;
 
-  let svg = `<svg viewBox="0 0 580 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">`;
+  let svg = `<svg viewBox="0 0 580 345" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;display:block;margin:0 auto">`;
   svg += `<defs>
     <pattern id="dots2" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(0,30,43,.12)"/></pattern>
     <marker id="arrWW" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
     <marker id="arrAK" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#00684A"/></marker>
+    <marker id="arrW0" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="rgba(0,30,43,.54)"/></marker>
     <marker id="arrRR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="#006EFF"/></marker>
     <marker id="arrOL" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 Z" fill="rgba(0,104,74,0.65)"/></marker>
   </defs>`;
-  svg += `<rect width="580" height="400" fill="url(#dots2)" rx="8"/>`;
+  svg += `<rect width="580" height="345" fill="url(#dots2)" rx="8"/>`;
 
   // CLIENT APP
-  svg += `<rect x="200" y="12" width="180" height="28" rx="8" fill="#fff" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
-    <text x="290" y="28" text-anchor="middle" font-size="10" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
+  svg += `<rect x="200" y="10" width="180" height="30" rx="8" fill="#fff" stroke="rgba(0,30,43,.22)" stroke-width="1.5"/>
+    <text x="290" y="29" text-anchor="middle" font-size="10" fill="rgba(0,30,43,.74)" font-family="Lexend Deca,sans-serif">CLIENT APPLICATION</text>`;
 
   // ── WRITE PATH: App → Primary ──
-  // When read also targets primary (readTarget===0), fan arrows apart to avoid label overlap
   const pri = npos[0];
-  const sameTarget = readTarget === 0;
-  const wX1 = sameTarget ? 300 : 290;
-  const wLineY1 = 56, wLineY2 = pri.y - 28;
+  // Three separate lanes above the Primary: READ left, WRITE center, ACK right.
+  const topY = 43, nodeTop = pri.y - 28;
 
   if (acksNeeded === 0) {
-    // w:0 fire-and-forget — grey dashed, no ACK back
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x}" y2="${wLineY2}" stroke="rgba(0,30,43,.54)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-    svg += `<rect x="297" y="84" width="56" height="14" rx="4" fill="#FAFBFC" stroke="rgba(0,30,43,.22)"/>`;
-    svg += `<text x="325" y="94" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">w:0 no ACK</text>`;
+    // w:0 sends the write but does not wait for an ACK.
+    svg += `<line x1="286" y1="${topY}" x2="286" y2="${nodeTop}" stroke="rgba(0,30,43,.54)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrW0)"/>`;
+    svg += `<rect x="291" y="85" width="53" height="14" rx="4" fill="#FAFBFC" stroke="rgba(0,30,43,.22)"/>`;
+    svg += `<text x="317.5" y="95" text-anchor="middle" font-size="8" fill="rgba(0,30,43,.65)" font-family="Lexend Deca,sans-serif">WRITE (w:0)</text>`;
+    svg += `<text x="350" y="112" font-size="8" fill="rgba(0,30,43,.54)" font-family="Lexend Deca,sans-serif">no ACK</text>`;
   } else {
-    svg += `<line x1="${wX1}" y1="${wLineY1}" x2="${pri.x + (sameTarget ? 8 : 0)}" y2="${wLineY2}" stroke="#00684A" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
-    const wLabelX = sameTarget ? 330 : 315;
-    const wLabelY = sameTarget ? 80 : 88;
-    svg += `<rect x="${wLabelX - 18}" y="${wLabelY}" width="36" height="14" rx="4" fill="#E3FCF7"/>`;
-    svg += `<text x="${wLabelX}" y="${wLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
-    // ACK back from Primary to App
-    const ackEndX  = sameTarget ? wX1 + 4 : wX1 - 12;
-    svg += `<line x1="${pri.x + (sameTarget ? 14 : -6)}" y1="${wLineY2}" x2="${ackEndX}" y2="${wLineY1}" stroke="#00684A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
-    const ackLabelX = sameTarget ? 336 : 262;
-    const ackLabelY = sameTarget ? 100 : 87;
-    svg += `<rect x="${ackLabelX - 16}" y="${ackLabelY}" width="32" height="14" rx="4" fill="#E3FCF7"/>`;
-    svg += `<text x="${ackLabelX}" y="${ackLabelY + 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">ACK</text>`;
+    svg += `<line x1="286" y1="${topY}" x2="286" y2="${nodeTop}" stroke="#00684A" stroke-width="2" stroke-dasharray="6 3" class="repl" marker-end="url(#arrWW)"/>`;
+    svg += `<rect x="292" y="84" width="39" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="311.5" y="94" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">WRITE</text>`;
+    // ACK travels back in its own right-hand lane.
+    svg += `<line x1="316" y1="${nodeTop}" x2="344" y2="${topY}" stroke="#00684A" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrAK)"/>`;
+    svg += `<rect x="346" y="94" width="32" height="14" rx="4" fill="#E3FCF7"/>`;
+    svg += `<text x="362" y="104" text-anchor="middle" font-size="8" font-weight="700" fill="#00684A" font-family="Lexend Deca,sans-serif">ACK</text>`;
   }
 
   // ── REPLICATION LINES: Primary → Secondaries ──
@@ -1200,15 +1195,14 @@ function wcRender() {
   }
 
   // ── READ PATH ──
-  // When targeting primary and write also goes primary, shift read arrow left
   const rt   = npos[readTarget];
-  const rdX1 = sameTarget ? 270 : 278;
-  const rdX2 = sameTarget ? (pri.x - 10) : rt.x + (readTarget === 1 ? 12 : (readTarget === 2 ? -12 : 3));
-  svg += `<line x1="${rdX1}" y1="56" x2="${rdX2}" y2="${rt.y - 28}" stroke="#006EFF" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
-  const rlx = sameTarget ? 245 : ((rdX1 + rdX2) / 2 + (readTarget === 1 ? -18 : readTarget === 2 ? 12 : 8));
-  const rly = sameTarget ? 88  : (56 + rt.y - 28) / 2;
-  svg += `<rect x="${rlx - 26}" y="${rly - 8}" width="52" height="14" rx="4" fill="#F9EBFF" stroke="rgba(0,30,43,.22)"/>`;
-  svg += `<text x="${rlx}" y="${rly + 2}" text-anchor="middle" font-size="8" fill="#001E2B" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
+  const readStartX = readTarget === 2 ? 348 : 232;
+  const readEndX = readTarget === 0 ? 262 : rt.x + (readTarget === 1 ? 12 : -12);
+  const readLabelX = readTarget === 0 ? 176 : readTarget === 1 ? 133 : 380;
+  const readLabelY = readTarget === 0 ? 84 : 108;
+  svg += `<line x1="${readStartX}" y1="${topY}" x2="${readEndX}" y2="${rt.y - 28}" stroke="#006EFF" stroke-width="1.8" stroke-dasharray="8 4" marker-end="url(#arrRR)"/>`;
+  svg += `<rect x="${readLabelX}" y="${readLabelY}" width="66" height="14" rx="4" fill="#EEF4FF" stroke="rgba(0,110,255,.35)"/>`;
+  svg += `<text x="${readLabelX + 33}" y="${readLabelY + 10}" text-anchor="middle" font-size="8" fill="#0057CC" font-family="Lexend Deca,sans-serif">READ → ${rt.id}</text>`;
 
   // ── NODES ──
   npos.forEach((pos, i) => {
