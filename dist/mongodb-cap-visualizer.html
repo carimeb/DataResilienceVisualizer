@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MongoDB Distributed Architecture & CAP Theorem Visualizer</title>
+<meta name="description" content="Interactive educational visualizer of MongoDB replica sets, failover, read and write concerns, and multi-region resilience.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Data Resilience Visualizer">
+<meta property="og:description" content="Explore MongoDB replica sets, failover, read and write concerns, and multi-region resilience interactively.">
+<meta property="og:url" content="https://carimeb.github.io/DataResilienceVisualizer/">
+<meta property="og:image" content="https://carimeb.github.io/DataResilienceVisualizer/assets/social-preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MongoDB logo on a green background">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://carimeb.github.io/DataResilienceVisualizer/assets/social-preview.png">
 <link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CjwhLS0gTGVhZiBwYXRoIGZyb20gdGhlIG9mZmljaWFsIE1vbmdvREIgbG9nbyB1c2VkIGluIHRoZSBwYWdlIGhlYWRlci4gLS0+CjxwYXRoIGQ9Ik05LjQ5MTA5IDMuMjk0ODhDOC4yMzc1NCAxLjgyMjgyIDcuMTY4IDAuMzI3NzYzIDYuOTQ5NDkgMC4wMTcyNTA3QzYuOTI2NDkgLTAuMDA1NzUwMjIgNi44OTE5OSAtMC4wMDU3NTAyMiA2Ljg2ODk5IDAuMDE3MjUwN0M2LjY1MDQ4IDAuMzI3NzYzIDUuNTgwOTQgMS44MjI4MiA0LjMzODg5IDMuMjk0ODhDLTYuMzIyMDMgMTYuODc2OSA2LjAxNzk1IDI2LjAzMTMgNi4wMTc5NSAyNi4wMzEzTDYuMTIxNDYgMjYuMTAwM0M2LjIxMzQ2IDI3LjUxNDggNi40NDM0NyAyOS41NTA0IDYuNDQzNDcgMjkuNTUwNEg2LjkwMzQ5SDcuMzYzNTFDNy4zNjM1MSAyOS41NTA0IDcuNTkzNTEgMjcuNTI2MyA3LjY4NTUyIDI2LjEwMDNMNy43ODkwMiAyNi4wMTk4QzcuODAwNTIgMjYuMDMxMyAyMC4xNTIgMTYuODc2OSA5LjQ5MTA5IDMuMjk0ODhaTTYuOTE0OTkgMjUuODM1OEM2LjkxNDk5IDI1LjgzNTggNi4zNjI5NyAyNS4zNjQyIDYuMjEzNDYgMjUuMTIyN1YyNS4wOTk3TDYuODgwNDkgMTAuMzEwMkM2Ljg4MDQ5IDEwLjI2NDIgNi45NDk0OSAxMC4yNjQyIDYuOTQ5NDkgMTAuMzEwMkw3LjYxNjUyIDI1LjA5OTdWMjUuMTIyN0M3LjQ2NzAxIDI1LjM2NDIgNi45MTQ5OSAyNS44MzU4IDYuOTE0OTkgMjUuODM1OFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkgMSkiIGZpbGw9IiMwMDAwMDAiLz4KPC9zdmc+Cg==">
 <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
